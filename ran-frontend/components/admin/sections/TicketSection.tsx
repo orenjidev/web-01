@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -408,7 +408,7 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className={`text-xs font-semibold ${reply.IsStaffReply ? "text-primary" : "text-muted-foreground"}`}>
-                  {reply.IsStaffReply ? "Staff Reply" : `User #${reply.UserNum}`}
+                  {reply.IsStaffReply ? (reply.ReplyUserID ?? "Staff") : `User #${reply.UserNum}`}
                 </span>
                 <span className="text-xs text-muted-foreground">{new Date(reply.CreatedAt).toLocaleString()}</span>
               </div>
@@ -489,12 +489,36 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
 /* ─────────────────────────────
    Main Section
 ───────────────────────────── */
+function playBeep() {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.type = "sine";
+    oscillator.frequency.value = 800;
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.5);
+  } catch {
+    // AudioContext not available (SSR or restricted context)
+  }
+}
+
 export function TicketSection() {
   const [tickets, setTickets] = useState<StaffTicketRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // Fingerprint: TicketID → UpdatedAt (for change detection)
+  const fingerprintRef = useRef<Record<number, string>>({});
+  const isFirstPollRef = useRef(true);
 
   async function load() {
     setLoading(true);
@@ -506,6 +530,11 @@ export function TicketSection() {
         const first = data.find((t) => t.Status !== "Closed") ?? data[0];
         setSelectedId(first.TicketID);
       }
+      // Seed the fingerprint on first load (no beep)
+      const fp: Record<number, string> = {};
+      data.forEach((t) => { fp[t.TicketID] = t.UpdatedAt ?? t.CreatedAt; });
+      fingerprintRef.current = fp;
+      isFirstPollRef.current = false;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load tickets.");
     } finally {
@@ -514,6 +543,43 @@ export function TicketSection() {
   }
 
   useEffect(() => { load(); }, []);
+
+  // Background polling — beep on new tickets or ticket updates
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (isFirstPollRef.current) return;
+      try {
+        const data = await getStaffTickets();
+        const prev = fingerprintRef.current;
+        let changed = false;
+
+        for (const t of data) {
+          if (!(t.TicketID in prev)) {
+            changed = true; // new ticket
+            break;
+          }
+          // UpdatedAt changes when a reply is added or status changes
+          if (prev[t.TicketID] !== (t.UpdatedAt ?? t.CreatedAt)) {
+            changed = true;
+            break;
+          }
+        }
+
+        if (changed) {
+          playBeep();
+          setTickets(data);
+        }
+
+        const fp: Record<number, string> = {};
+        data.forEach((t) => { fp[t.TicketID] = t.UpdatedAt ?? t.CreatedAt; });
+        fingerprintRef.current = fp;
+      } catch {
+        // Silently ignore poll errors
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const filtered = statusFilter === "all"
     ? tickets

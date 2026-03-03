@@ -64,7 +64,6 @@ const data = {
       isActive: true,
       items: [
         { title: "Manage Account", action: "account.manage" as AdminSection },
-        { title: "Create New User", action: "account.create" as AdminSection },
       ],
     },
     {
@@ -73,7 +72,10 @@ const data = {
       icon: Sword,
       isActive: true,
       items: [
-        { title: "Manage Character", action: "character.manage" as AdminSection },
+        {
+          title: "Manage Character",
+          action: "character.manage" as AdminSection,
+        },
       ],
     },
     {
@@ -109,9 +111,7 @@ const data = {
       title: "Settings",
       url: "#",
       icon: Settings2,
-      items: [
-        { title: "General", action: "dashboard" as AdminSection },
-      ],
+      items: [{ title: "General", action: "dashboard" as AdminSection }],
     },
   ],
 };

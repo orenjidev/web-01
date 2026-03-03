@@ -1,2 +1,4 @@
 *.dds
 *.webp
+/node_modules
+/.next

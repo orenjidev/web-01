@@ -28,8 +28,8 @@ function getCategoryStyle(type: string) {
   switch (type) {
     case "announcement":
       return { label: "Announcement", className: "bg-blue-100 text-blue-800" };
-    case "update":
-      return { label: "Update", className: "bg-green-100 text-green-800" };
+    case "patch":
+      return { label: "Patch", className: "bg-green-100 text-green-800" };
     case "event":
       return { label: "Event", className: "bg-purple-100 text-purple-800" };
     case "notice":
@@ -46,7 +46,7 @@ export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { config: publicConfig } = usePublicConfig();
 
-  const filters = ["ALL", "ANNOUNCEMENT", "UPDATE", "EVENT", "NOTICE"];
+  const filters = ["ALL", "ANNOUNCEMENT", "PATCH", "EVENT", "NOTICE"];
   const itemsPerPage = publicConfig?.gameoptions?.uihelper?.max_topnews ?? 5;
 
   // Load dummy data

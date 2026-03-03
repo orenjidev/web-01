@@ -15,6 +15,7 @@ export interface StaffTicketRow {
   Priority: string;
   Username: string;
   CreatedAt: string;
+  UpdatedAt: string | null;
 }
 
 export interface TicketReply {
@@ -23,6 +24,7 @@ export interface TicketReply {
   Message: string;
   IsStaffReply: boolean;
   CreatedAt: string;
+  ReplyUserID?: string | null;
   attachments?: { AttachmentID: number; FileName: string; FilePath: string }[];
 }
 
@@ -82,21 +84,10 @@ export async function getStaffTickets(): Promise<StaffTicketRow[]> {
 export async function getStaffTicketFull(
   ticketId: number,
 ): Promise<StaffTicketFull> {
-  // Staff endpoint returns the ticket row only (no replies)
-  const staffRes = await apiFetch<{ ok: boolean; ticket: TicketDetail }>(
+  const res = await apiFetch<{ ok: boolean; ticket: TicketDetail; replies: TicketReply[] }>(
     `/api/tickets/staff/${ticketId}`,
   );
-  // The user-facing detail endpoint returns ticket + replies; staff are auth'd users too
-  try {
-    const userRes = await apiFetch<{
-      ok: boolean;
-      ticket: TicketDetail;
-      replies: TicketReply[];
-    }>(`/api/tickets/${ticketId}`);
-    return { ticket: staffRes.ticket, replies: userRes.replies ?? [] };
-  } catch {
-    return { ticket: staffRes.ticket, replies: [] };
-  }
+  return { ticket: res.ticket, replies: res.replies ?? [] };
 }
 
 export async function updateTicketStatus(

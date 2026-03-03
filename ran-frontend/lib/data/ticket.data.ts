@@ -33,6 +33,7 @@ export interface TicketReply {
   userNum: number;
   message: string;
   isStaffReply: boolean;
+  replyUserID: string | null;
   created_at: string;
   attachments: {
     id: number;
@@ -201,7 +202,8 @@ export async function getTicketDetail(
       id: r.ReplyID,
       userNum: r.UserNum,
       message: r.Message,
-      isStaffReply: r.IsStaffReply === 1,
+      isStaffReply: Boolean(r.IsStaffReply),
+      replyUserID: r.ReplyUserID ?? null,
       created_at: r.CreatedAt,
       attachments: (r.attachments || []).map((a: any) => ({
         id: a.AttachmentID,

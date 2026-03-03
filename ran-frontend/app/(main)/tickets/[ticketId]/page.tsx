@@ -269,6 +269,9 @@ export default function TicketDetailPage() {
                   : "bg-primary text-primary-foreground"
               }`}
             >
+              <p className={`text-xs font-semibold mb-2 ${r.isStaffReply ? "text-muted-foreground" : "opacity-70"}`}>
+                {r.isStaffReply ? `Support${r.replyUserID ? ` • ${r.replyUserID}` : ""}` : "You"}
+              </p>
               <p className="whitespace-pre-wrap text-sm leading-relaxed">
                 {r.message}
               </p>

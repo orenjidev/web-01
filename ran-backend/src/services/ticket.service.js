@@ -221,6 +221,7 @@ export const getTicketDetails = async (ticketId, ctx = {}) => {
         r.Message,
         r.IsStaffReply,
         r.CreatedAt,
+        u.UserID AS ReplyUserID,
         a.AttachmentID,
         a.FileName,
         a.FilePath,
@@ -229,6 +230,8 @@ export const getTicketDetails = async (ticketId, ctx = {}) => {
       FROM dbo.TicketReplies r
       LEFT JOIN dbo.TicketAttachments a
         ON r.ReplyID = a.ReplyID
+      LEFT JOIN [${process.env.DB_NAME_USER}].dbo.UserInfo u
+        ON r.UserNum = u.UserNum
       WHERE r.TicketID = @TicketID
       ORDER BY r.CreatedAt ASC
     `);
@@ -244,6 +247,7 @@ export const getTicketDetails = async (ticketId, ctx = {}) => {
         Message: row.Message,
         IsStaffReply: row.IsStaffReply,
         CreatedAt: row.CreatedAt,
+        ReplyUserID: row.ReplyUserID ?? null,
         attachments: [],
       };
     }
@@ -290,30 +294,26 @@ export const addTicketReply = async (ticketId, body, ctx = {}, files = []) => {
     return { ok: false, message: MSG.TICKET.NOT_FOUND };
   }
 
-  const transaction = pool.transaction();
-
   try {
-    await transaction.begin();
-
-    // Insert reply and get ReplyID
-    const replyResult = await transaction
+    // Insert the reply
+    const replyResult = await pool
       .request()
       .input("TicketID", ticketId)
       .input("UserNum", ctx.user.userNum)
       .input("Message", body.message).query(`
         INSERT INTO dbo.TicketReplies
         (TicketID, UserNum, Message, IsStaffReply)
-        OUTPUT INSERTED.ReplyID
         VALUES
-        (@TicketID, @UserNum, @Message, 0)
+        (@TicketID, @UserNum, @Message, 0);
+        SELECT SCOPE_IDENTITY() AS ReplyID;
       `);
 
-    const replyId = replyResult.recordset[0].ReplyID;
+    const replyId = replyResult.recordset[0]?.ReplyID;
 
-    // Insert attachments if present
-    if (files && files.length > 0) {
+    // Insert attachments if present and ReplyID was obtained
+    if (replyId && files && files.length > 0) {
       for (const file of files) {
-        await transaction
+        await pool
           .request()
           .input("TicketID", ticketId)
           .input("ReplyID", replyId)
@@ -330,7 +330,10 @@ export const addTicketReply = async (ticketId, body, ctx = {}, files = []) => {
       }
     }
 
-    await transaction.commit();
+    // Touch UpdatedAt for notification polling (best-effort)
+    pool.request().input("TicketID", ticketId).query(`
+      UPDATE dbo.Tickets SET UpdatedAt = GETDATE() WHERE TicketID = @TicketID
+    `).catch(() => {});
 
     await logAction({
       userId: ctx.user?.userNum ?? null,
@@ -344,7 +347,7 @@ export const addTicketReply = async (ticketId, body, ctx = {}, files = []) => {
 
     return { ok: true, message: MSG.TICKET.REPLY_ADDED };
   } catch (err) {
-    await transaction.rollback();
+    console.error("[addTicketReply] Error:", err);
     return { ok: false, message: MSG.GENERAL.ERROR };
   }
 };
@@ -369,6 +372,7 @@ export const getAllTicketsStaff = async (filters = {}, ctx = {}) => {
       t.Status,
       t.Priority,
       t.CreatedAt,
+      t.UpdatedAt,
       u.UserID AS Username
     FROM dbo.Tickets t
     LEFT JOIN [${process.env.DB_NAME_USER}].dbo.UserInfo u
@@ -405,7 +409,54 @@ export const getTicketDetailsStaff = async (ticketId, ctx = {}) => {
     return { ok: false, message: MSG.TICKET.NOT_FOUND };
   }
 
-  return { ok: true, ticket: result.recordset[0] };
+  // Fetch replies with replier username
+  const repliesResult = await pool.request().input("TicketID", ticketId).query(`
+      SELECT
+        r.ReplyID,
+        r.UserNum,
+        r.Message,
+        r.IsStaffReply,
+        r.CreatedAt,
+        u.UserID AS ReplyUserID,
+        a.AttachmentID,
+        a.FileName,
+        a.FilePath,
+        a.FileSize,
+        a.FileType
+      FROM dbo.TicketReplies r
+      LEFT JOIN dbo.TicketAttachments a
+        ON r.ReplyID = a.ReplyID
+      LEFT JOIN [${process.env.DB_NAME_USER}].dbo.UserInfo u
+        ON r.UserNum = u.UserNum
+      WHERE r.TicketID = @TicketID
+      ORDER BY r.CreatedAt ASC
+    `);
+
+  const repliesMap = {};
+  for (const row of repliesResult.recordset) {
+    if (!repliesMap[row.ReplyID]) {
+      repliesMap[row.ReplyID] = {
+        ReplyID: row.ReplyID,
+        UserNum: row.UserNum,
+        Message: row.Message,
+        IsStaffReply: row.IsStaffReply,
+        CreatedAt: row.CreatedAt,
+        ReplyUserID: row.ReplyUserID ?? null,
+        attachments: [],
+      };
+    }
+    if (row.AttachmentID) {
+      repliesMap[row.ReplyID].attachments.push({
+        AttachmentID: row.AttachmentID,
+        FileName: row.FileName,
+        FilePath: row.FilePath,
+        FileSize: row.FileSize,
+        FileType: row.FileType,
+      });
+    }
+  }
+
+  return { ok: true, ticket: result.recordset[0], replies: Object.values(repliesMap) };
 };
 
 export const updateTicketStatus = async (ticketId, body, ctx = {}) => {
@@ -491,6 +542,11 @@ export const addStaffReply = async (ticketId, body, ctx = {}) => {
       VALUES
       (@TicketID, @UserNum, @Message, 1)
     `);
+
+  // Touch UpdatedAt for notification polling (best-effort)
+  pool.request().input("TicketID", ticketId).query(`
+    UPDATE dbo.Tickets SET UpdatedAt = GETDATE() WHERE TicketID = @TicketID
+  `).catch(() => {});
 
   await logAction({
     userId: ctx.user?.userNum ?? null,
