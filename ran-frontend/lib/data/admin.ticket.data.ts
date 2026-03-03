@@ -28,6 +28,14 @@ export interface TicketReply {
   attachments?: { AttachmentID: number; FileName: string; FilePath: string }[];
 }
 
+export interface TicketAttachment {
+  AttachmentID: number;
+  FileName: string;
+  FilePath: string;
+  FileSize: number;
+  FileType: string;
+}
+
 export interface TicketDetail {
   TicketID: number;
   UserNum: number;
@@ -39,6 +47,7 @@ export interface TicketDetail {
   CreatedAt: string;
   UpdatedAt: string;
   AssignedToStaffUserNum: number | null;
+  attachments?: TicketAttachment[];
 }
 
 export interface StaffTicketFull {
@@ -84,10 +93,16 @@ export async function getStaffTickets(): Promise<StaffTicketRow[]> {
 export async function getStaffTicketFull(
   ticketId: number,
 ): Promise<StaffTicketFull> {
-  const res = await apiFetch<{ ok: boolean; ticket: TicketDetail; replies: TicketReply[] }>(
-    `/api/tickets/staff/${ticketId}`,
-  );
-  return { ticket: res.ticket, replies: res.replies ?? [] };
+  const res = await apiFetch<{
+    ok: boolean;
+    ticket: TicketDetail;
+    replies: TicketReply[];
+    attachments: TicketAttachment[];
+  }>(`/api/tickets/staff/${ticketId}`);
+  return {
+    ticket: { ...res.ticket, attachments: res.attachments ?? [] },
+    replies: res.replies ?? [],
+  };
 }
 
 export async function updateTicketStatus(
@@ -103,7 +118,22 @@ export async function updateTicketStatus(
 export async function staffReply(
   ticketId: number,
   message: string,
+  files?: File[],
 ): Promise<{ ok: boolean }> {
+  if (files && files.length > 0) {
+    if (!API_BASE_URL) throw new Error("API endpoint is not configured");
+    const form = new FormData();
+    form.append("message", message);
+    files.forEach((f) => form.append("attachments", f));
+    const res = await fetch(`${API_BASE_URL}/api/tickets/staff/${ticketId}/reply`, {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Request failed");
+    return json;
+  }
   return apiFetch(`/api/tickets/staff/${ticketId}/reply`, {
     method: "POST",
     body: JSON.stringify({ message }),

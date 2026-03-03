@@ -8,6 +8,7 @@ export interface PublicConfig {
   serverMotto: string;
   ePointsName: string;
   footertext: string;
+  highlights: string[];
 
   features: {
     changePassword: boolean;
@@ -16,6 +17,12 @@ export interface PublicConfig {
     topUp: boolean;
     characterDelete: boolean;
     ticketSystem: boolean;
+  };
+
+  shop: {
+    enabled: boolean;
+    voteShop: boolean;
+    premiumShop: boolean;
   };
 
   gameoptions: {

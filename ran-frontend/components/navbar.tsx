@@ -6,11 +6,13 @@ import Image from "next/image";
 import MaxWidthWrapper from "./maxwidthwrapper";
 import { Button } from "./ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 import AccountSection from "./AccountSection";
 import LoginDialog from "@/components/auth/LoginDialog";
 
 const NavBar = () => {
   const { user, loading, logout } = useAuth();
+  const { config } = usePublicConfig();
 
   const navLinkClass =
     "nav-link relative font-medium text-gray-200 hover:text-white " +
@@ -57,16 +59,16 @@ const NavBar = () => {
               </Link>
 
               {/* Auth Only Links */}
-              {!loading && user && (
-                <>
-                  <Link href="/itemshop" className={navLinkClass}>
-                    Item Shop
-                  </Link>
+              {!loading && user && config?.shop?.enabled !== false && (
+                <Link href="/itemshop" className={navLinkClass}>
+                  Item Shop
+                </Link>
+              )}
 
-                  <Link href="/tickets" className={navLinkClass}>
-                    Ticket
-                  </Link>
-                </>
+              {!loading && user && config?.features?.ticketSystem !== false && (
+                <Link href="/tickets" className={navLinkClass}>
+                  Ticket
+                </Link>
               )}
             </nav>
 

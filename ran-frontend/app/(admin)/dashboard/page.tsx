@@ -39,6 +39,7 @@ import { TicketSection } from "@/components/admin/sections/TicketSection";
 import { ShopSection } from "@/components/admin/sections/ShopSection";
 import { NewsSection } from "@/components/admin/sections/NewsSection";
 import { DownloadSection } from "@/components/admin/sections/DownloadSection";
+import { ConfigSection } from "@/components/admin/sections/ConfigSection";
 
 /* =====================================================
    Constants
@@ -68,6 +69,7 @@ const SECTION_LABELS: Record<AdminSection, string> = {
   "shop.items": "Shop Items",
   news: "Manage News",
   downloads: "Manage Downloads",
+  "server.config": "Server Configuration",
 };
 
 /* =====================================================
@@ -363,6 +365,7 @@ export default function DashboardPage() {
           {activeSection === "shop.items" && <ShopSection tab="items" />}
           {activeSection === "news" && <NewsSection />}
           {activeSection === "downloads" && <DownloadSection />}
+          {activeSection === "server.config" && <ConfigSection />}
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -409,6 +409,14 @@ export const getTicketDetailsStaff = async (ticketId, ctx = {}) => {
     return { ok: false, message: MSG.TICKET.NOT_FOUND };
   }
 
+  // Fetch ticket-level attachments (not tied to a reply)
+  const ticketAttachmentsResult = await pool.request().input("TicketID", ticketId).query(`
+    SELECT AttachmentID, FileName, FilePath, FileSize, FileType
+    FROM dbo.TicketAttachments
+    WHERE TicketID = @TicketID AND ReplyID IS NULL
+    ORDER BY UploadedAt ASC
+  `);
+
   // Fetch replies with replier username
   const repliesResult = await pool.request().input("TicketID", ticketId).query(`
       SELECT
@@ -456,7 +464,12 @@ export const getTicketDetailsStaff = async (ticketId, ctx = {}) => {
     }
   }
 
-  return { ok: true, ticket: result.recordset[0], replies: Object.values(repliesMap) };
+  return {
+    ok: true,
+    ticket: result.recordset[0],
+    replies: Object.values(repliesMap),
+    attachments: ticketAttachmentsResult.recordset,
+  };
 };
 
 export const updateTicketStatus = async (ticketId, body, ctx = {}) => {
@@ -523,7 +536,7 @@ export const assignTicketToStaff = async (ticketId, body, ctx = {}) => {
   return { ok: true, message: MSG.TICKET.ASSIGNED };
 };
 
-export const addStaffReply = async (ticketId, body, ctx = {}) => {
+export const addStaffReply = async (ticketId, body, ctx = {}, files = []) => {
   const MSG = getMessage(ctx.lang);
 
   if (!(await isStaffUser(ctx.user.userNum))) {
@@ -532,33 +545,59 @@ export const addStaffReply = async (ticketId, body, ctx = {}) => {
 
   const pool = await getWebPool();
 
-  await pool
-    .request()
-    .input("TicketID", ticketId)
-    .input("UserNum", ctx.user.userNum)
-    .input("Message", body.message).query(`
-      INSERT INTO dbo.TicketReplies
-      (TicketID, UserNum, Message, IsStaffReply)
-      VALUES
-      (@TicketID, @UserNum, @Message, 1)
-    `);
+  try {
+    const replyResult = await pool
+      .request()
+      .input("TicketID", ticketId)
+      .input("UserNum", ctx.user.userNum)
+      .input("Message", body.message ?? "").query(`
+        INSERT INTO dbo.TicketReplies
+        (TicketID, UserNum, Message, IsStaffReply)
+        VALUES (@TicketID, @UserNum, @Message, 1);
+        SELECT SCOPE_IDENTITY() AS ReplyID;
+      `);
 
-  // Touch UpdatedAt for notification polling (best-effort)
-  pool.request().input("TicketID", ticketId).query(`
-    UPDATE dbo.Tickets SET UpdatedAt = GETDATE() WHERE TicketID = @TicketID
-  `).catch(() => {});
+    const replyId = replyResult.recordset[0]?.ReplyID;
 
-  await logAction({
-    userId: ctx.user?.userNum ?? null,
-    actionType: "REPLY",
-    entityType: "TICKET",
-    entityId: ticketId,
-    description: MSG.LOG.ACTION_TICKET_REPLY,
-    ipAddress: ctx.ip,
-    userAgent: ctx.userAgent,
-  });
+    if (replyId && files && files.length > 0) {
+      for (const file of files) {
+        await pool
+          .request()
+          .input("TicketID", ticketId)
+          .input("ReplyID", replyId)
+          .input("FileName", file.originalname)
+          .input("FilePath", file.filename)
+          .input("FileSize", file.size)
+          .input("FileType", file.mimetype)
+          .input("UploadedByUserNum", ctx.user.userNum).query(`
+            INSERT INTO dbo.TicketAttachments
+            (TicketID, ReplyID, FileName, FilePath, FileSize, FileType, UploadedByUserNum, UploadedAt)
+            VALUES
+            (@TicketID, @ReplyID, @FileName, @FilePath, @FileSize, @FileType, @UploadedByUserNum, GETDATE())
+          `);
+      }
+    }
 
-  return { ok: true, message: MSG.TICKET.REPLY_ADDED };
+    // Touch UpdatedAt for notification polling (best-effort)
+    pool.request().input("TicketID", ticketId).query(`
+      UPDATE dbo.Tickets SET UpdatedAt = GETDATE() WHERE TicketID = @TicketID
+    `).catch(() => {});
+
+    await logAction({
+      userId: ctx.user?.userNum ?? null,
+      actionType: "REPLY",
+      entityType: "TICKET",
+      entityId: ticketId,
+      description: MSG.LOG.ACTION_TICKET_REPLY,
+      ipAddress: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
+
+    return { ok: true, message: MSG.TICKET.REPLY_ADDED };
+  } catch (err) {
+    console.error("[addStaffReply] Error:", err);
+    return { ok: false, message: MSG.GENERAL.ERROR };
+  }
 };
 
 export const getStaffList = async () => {

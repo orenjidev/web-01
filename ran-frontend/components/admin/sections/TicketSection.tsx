@@ -241,6 +241,7 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
   const [full, setFull] = useState<StaffTicketFull | null>(null);
   const [loading, setLoading] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [staffList, setStaffList] = useState<StaffListItem[]>([]);
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(null);
@@ -262,13 +263,24 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
       .finally(() => setLoading(false));
   }, [ticketId]);
 
+  function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const imageItems = Array.from(e.clipboardData.items).filter((item) =>
+      item.type.startsWith("image/"),
+    );
+    if (imageItems.length === 0) return;
+    e.preventDefault();
+    const newFiles = imageItems.map((item) => item.getAsFile()).filter(Boolean) as File[];
+    setReplyFiles((prev) => [...prev, ...newFiles]);
+  }
+
   async function handleReply() {
-    if (!replyText.trim()) { toast.error("Reply cannot be empty."); return; }
+    if (!replyText.trim() && replyFiles.length === 0) { toast.error("Reply cannot be empty."); return; }
     setActionLoading(true);
     try {
-      await staffReply(ticketId, replyText.trim());
+      await staffReply(ticketId, replyText.trim(), replyFiles);
       toast.success("Reply sent.");
       setReplyText("");
+      setReplyFiles([]);
       setFull(await getStaffTicketFull(ticketId));
       onStatusChange();
     } catch (err) {
@@ -396,6 +408,39 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
               <span className="text-xs text-muted-foreground">{new Date(ticket.CreatedAt).toLocaleString()}</span>
             </div>
             <p className="text-sm whitespace-pre-wrap">{ticket.Description}</p>
+            {ticket.attachments && ticket.attachments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {ticket.attachments.some((a) => isImagePath(a.FilePath)) && (
+                  <div className="flex flex-wrap gap-2">
+                    {ticket.attachments.filter((a) => isImagePath(a.FilePath)).map((a) => {
+                      const url = `${base}/uploads/tickets/${a.FilePath}`;
+                      return (
+                        <img
+                          key={a.AttachmentID}
+                          src={url}
+                          alt={a.FileName}
+                          onClick={() => setLightboxSrc(url)}
+                          className="h-20 w-24 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition"
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {ticket.attachments.filter((a) => !isImagePath(a.FilePath)).map((a) => (
+                    <a
+                      key={a.AttachmentID}
+                      href={`${base}/uploads/tickets/${a.FilePath}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      📎 {a.FileName}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Replies */}
@@ -421,7 +466,7 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
                   {reply.attachments.some((a) => isImagePath(a.FilePath)) && (
                     <div className="flex flex-wrap gap-2">
                       {reply.attachments.filter((a) => isImagePath(a.FilePath)).map((a) => {
-                        const url = `${base}${a.FilePath.startsWith("/") ? "" : "/"}${a.FilePath}`;
+                        const url = `${base}/uploads/tickets/${a.FilePath}`;
                         return (
                           <img
                             key={a.AttachmentID}
@@ -439,7 +484,7 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
                     {reply.attachments.filter((a) => !isImagePath(a.FilePath)).map((a) => (
                       <a
                         key={a.AttachmentID}
-                        href={`${base}${a.FilePath.startsWith("/") ? "" : "/"}${a.FilePath}`}
+                        href={`${base}/uploads/tickets/${a.FilePath}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-primary hover:underline"
@@ -464,12 +509,33 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
             <textarea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
-              placeholder="Type your staff reply…"
+              onPaste={handlePaste}
+              placeholder="Type your staff reply… (you can paste images)"
               rows={3}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
             />
+            {replyFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {replyFiles.map((file, idx) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="h-16 w-20 object-cover rounded border border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setReplyFiles((prev) => prev.filter((_, i) => i !== idx))}
+                      className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-xs leading-none opacity-0 group-hover:opacity-100 transition"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex justify-end mt-2">
-              <Button size="sm" onClick={handleReply} disabled={actionLoading || !replyText.trim()}>
+              <Button size="sm" onClick={handleReply} disabled={actionLoading || (!replyText.trim() && replyFiles.length === 0)}>
                 {actionLoading ? "Sending…" : "Send Reply"}
               </Button>
             </div>

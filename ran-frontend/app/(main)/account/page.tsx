@@ -587,7 +587,7 @@ export default function AccountPanel() {
                     <TableCell>{account.chaRemain}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-medium">E-Points</TableCell>
+                    <TableCell className="font-medium">{ publicConfig?.ePointsName}</TableCell>
                     <TableCell>{account.epoint}</TableCell>
                   </TableRow>
                   <TableRow>
@@ -615,34 +615,40 @@ export default function AccountPanel() {
               </Table>
 
               <div className="mt-4 flex gap-2">
-                <Button
-                  onClick={() => {
-                    resetPasswordForm();
-                    setOpenModal("password");
-                  }}
-                >
-                  Change Password
-                </Button>
+                {publicConfig?.features.changePassword && (
+                  <Button
+                    onClick={() => {
+                      resetPasswordForm();
+                      setOpenModal("password");
+                    }}
+                  >
+                    Change Password
+                  </Button>
+                )}
 
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    resetEmailForm();
-                    setOpenModal("email");
-                  }}
-                >
-                  Change Email
-                </Button>
+                {publicConfig?.features.changeEmail && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      resetEmailForm();
+                      setOpenModal("email");
+                    }}
+                  >
+                    Change Email
+                  </Button>
+                )}
 
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    resetPinForm();
-                    setOpenModal("pincode");
-                  }}
-                >
-                  Change Pincode
-                </Button>
+                {publicConfig?.features.changePin && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      resetPinForm();
+                      setOpenModal("pincode");
+                    }}
+                  >
+                    Change Pincode
+                  </Button>
+                )}
               </div>
             </>
           )}
@@ -696,16 +702,18 @@ export default function AccountPanel() {
                           </span>
                         </TableCell>
 
-                        <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={deletingId === char.id}
-                            onClick={() => handleDeleteCharacter(char.id)}
-                          >
-                            {deletingId === char.id ? "Deleting..." : "Delete"}
-                          </Button>
-                        </TableCell>
+                        {publicConfig?.features.characterDelete && (
+                          <TableCell>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={deletingId === char.id}
+                              onClick={() => handleDeleteCharacter(char.id)}
+                            >
+                              {deletingId === char.id ? "Deleting..." : "Delete"}
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

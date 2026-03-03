@@ -4,6 +4,7 @@ import dashboardRoutes from "./dashboard.routes.js";
 import characterRoutes from "./character.routes.js";
 import shopRoutes from "./shop.routes.js";
 import actionlogRoutes from "./actionlog.routes.js";
+import serverConfigRoutes from "./serverConfig.routes.js";
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/character", characterRoutes);
 router.use("/shop", shopRoutes);
 router.use("/actionlog", actionlogRoutes);
+router.use("/server-config", serverConfigRoutes);
 
 export default router;

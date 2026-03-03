@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 import { toast } from "sonner";
 import { Ban, PlusCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function TicketsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { config, loadingConfig } = usePublicConfig();
   const isAuthed = Boolean(user);
   const shown = useRef(false);
 
@@ -35,6 +37,11 @@ export default function TicketsPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthed) return;
+    if (loadingConfig) return;
+    if (config?.features.ticketSystem === false) {
+      setLoading(false);
+      return;
+    }
 
     async function load() {
       try {
@@ -48,7 +55,7 @@ export default function TicketsPage() {
     }
 
     load();
-  }, [authLoading, isAuthed, router]);
+  }, [authLoading, isAuthed, router, config, loadingConfig]);
 
   if (!isAuthed) {
     return (
@@ -59,6 +66,22 @@ export default function TicketsPage() {
             <h1 className="text-xl font-semibold">Forbidden Access</h1>
             <p className="text-muted-foreground text-sm">
               Login first to see content.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!loading && !loadingConfig && config?.features.ticketSystem === false) {
+    return (
+      <div className="max-w-4xl mx-auto py-16 px-4">
+        <Card>
+          <CardContent className="flex flex-col items-center text-center py-12 space-y-4">
+            <Ban size={56} className="opacity-50" />
+            <h1 className="text-xl font-semibold">Feature Unavailable</h1>
+            <p className="text-muted-foreground text-sm">
+              The support ticket system is currently disabled.
             </p>
           </CardContent>
         </Card>

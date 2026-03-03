@@ -12,7 +12,20 @@
  * =====================================================
  */
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import * as authService from "../controllers/auth.controller.js";
+import { getMessage } from "../../constants/messages.js";
+
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const MSG = getMessage(req.ctx?.lang);
+    res.status(429).json({ ok: false, message: MSG.RATE_LIMIT.REGISTER });
+  },
+});
 
 const router = Router();
 
@@ -103,7 +116,7 @@ router.post("/login", authService.loginController);
  *   - Username already taken
  *   - Email already taken
  */
-router.post("/register", authService.registerController);
+router.post("/register", registerLimiter, authService.registerController);
 
 /**
  * -----------------------------------------------------

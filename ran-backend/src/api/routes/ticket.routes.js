@@ -351,6 +351,10 @@ router.put(
  * Error Response:
  *   - 400 Bad Request
  */
-router.post("/staff/:ticketId/reply", ticketController.addStaffReplyController);
+router.post(
+  "/staff/:ticketId/reply",
+  ticketUpload.array("attachments", 5),
+  ticketController.addStaffReplyController,
+);
 
 export default router;

@@ -221,6 +221,14 @@ const messages = {
     },
 
     /* -------------------------
+       Rate Limiting
+    -------------------------- */
+
+    RATE_LIMIT: {
+      REGISTER: "Too many registration attempts. Please try again in 15 minutes.",
+    },
+
+    /* -------------------------
        Logging (internal but centralized)
     -------------------------- */
 

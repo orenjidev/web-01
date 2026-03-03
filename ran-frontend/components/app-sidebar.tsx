@@ -33,7 +33,8 @@ export type AdminSection =
   | "shop.categories"
   | "shop.items"
   | "news"
-  | "downloads";
+  | "downloads"
+  | "server.config";
 
 const data = {
   user: {
@@ -111,7 +112,10 @@ const data = {
       title: "Settings",
       url: "#",
       icon: Settings2,
-      items: [{ title: "General", action: "dashboard" as AdminSection }],
+      items: [
+        { title: "General", action: "dashboard" as AdminSection },
+        { title: "Server Config", action: "server.config" as AdminSection },
+      ],
     },
   ],
 };

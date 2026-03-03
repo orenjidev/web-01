@@ -8,6 +8,7 @@ export function getPublicConfig(req, res) {
     serverMotto: baseServerConfig.definitions.serverMotto,
     ePointsName: baseServerConfig.definitions.ePointsName,
     footertext: baseServerConfig.definitions.footer,
+    highlights: baseServerConfig.definitions.highlights ?? [],
 
     features: {
       changePassword: baseServerConfig.features.changePassword,
@@ -16,6 +17,12 @@ export function getPublicConfig(req, res) {
       topUp: baseServerConfig.features.topup,
       characterDelete: baseServerConfig.features.characterDelete,
       ticketSystem: baseServerConfig.features.ticketSystem,
+    },
+
+    shop: {
+      enabled: baseServerConfig.shop.enabled,
+      voteShop: baseServerConfig.shop.voteShop,
+      premiumShop: baseServerConfig.shop.premiumShop,
     },
 
     gameoptions: {

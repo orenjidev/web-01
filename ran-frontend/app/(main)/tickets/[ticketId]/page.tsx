@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Ban } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ export default function TicketDetailPage() {
   const ticketId = Number(params.ticketId);
 
   const { user, loading: authLoading } = useAuth();
+  const { config } = usePublicConfig();
   const isAuthed = Boolean(user);
   const shown = useRef(false);
 
@@ -43,6 +45,10 @@ export default function TicketDetailPage() {
 
   useEffect(() => {
     if (authLoading || !isAuthed) return;
+    if (config?.features.ticketSystem === false) {
+      setLoading(false);
+      return;
+    }
 
     async function load() {
       const data = await getTicketDetail(ticketId);
@@ -62,7 +68,7 @@ export default function TicketDetailPage() {
     }
 
     if (ticketId) load();
-  }, [ticketId, authLoading, isAuthed]);
+  }, [ticketId, authLoading, isAuthed, config]);
 
   async function handleReply() {
     if (!ticket) return;
@@ -113,6 +119,20 @@ export default function TicketDetailPage() {
             <Ban size={56} className="opacity-60" />
             <h1 className="text-xl font-semibold">Forbidden Access</h1>
             <p className="text-muted-foreground">Login first to see content.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!loading && config?.features.ticketSystem === false) {
+    return (
+      <div className="max-w-4xl mx-auto py-16 px-4">
+        <Card>
+          <CardContent className="flex flex-col items-center text-center py-12 space-y-3">
+            <Ban size={56} className="opacity-60" />
+            <h1 className="text-xl font-semibold">Feature Unavailable</h1>
+            <p className="text-muted-foreground">The support ticket system is currently disabled.</p>
           </CardContent>
         </Card>
       </div>

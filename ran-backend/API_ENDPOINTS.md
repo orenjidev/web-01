@@ -344,3 +344,108 @@
 | **User** | Requires authenticated session (Bearer token) |
 | **Staff** | Requires `userType >= 50` |
 | **GM Access** | Requires Auth + GM Tool permission check |
+
+
+##
+Guide: Adding a New Feature to the Server Config
+Follow these 5 steps every time you want to add a new toggleable feature.
+
+Step 1 — Add the default value to server.config.js
+This is the source of truth for defaults and the shape of the section.
+
+
+// ran-backend/src/config/server.config.js
+export const baseServerConfig = {
+  // ... existing sections ...
+
+  myNewFeature: {         // <-- new top-level section (or field in an existing section)
+    enabled: true,
+    someOption: "default",
+  },
+};
+If it's a boolean flag that belongs to an existing section (like features), just add the field there — no new section needed.
+
+Step 2 — Whitelist the section key in serverConfig.service.js
+Only sections listed here are read from / written to the DB.
+
+
+// ran-backend/src/services/serverConfig.service.js
+const DB_SECTIONS = [
+  // ... existing keys ...
+  "myNewFeature",   // <-- add this if it's a new top-level section
+];
+If your field was added inside an existing section (e.g. features.myFlag), skip this step — the whole features object is already in DB_SECTIONS.
+
+Step 3 — Expose it via the public config endpoint (if players need to see it)
+
+// ran-backend/src/api/controllers/publicConfig.controller.js
+export function getPublicConfig(req, res) {
+  res.json({
+    // ... existing fields ...
+
+    myNewFeature: {
+      enabled: baseServerConfig.myNewFeature.enabled,
+      someOption: baseServerConfig.myNewFeature.someOption,
+    },
+  });
+}
+Skip this step for staff-only / server-internal settings.
+
+Step 4 — Add the TypeScript type to the frontend interface
+
+// ran-frontend/lib/data/publicConfig.data.ts
+export interface PublicConfig {
+  // ... existing fields ...
+
+  myNewFeature: {
+    enabled: boolean;
+    someOption: string;
+  };
+}
+Then use it in any page with the existing hook — no extra setup:
+
+
+const { config } = usePublicConfig();
+if (!config?.myNewFeature?.enabled) return <FeatureDisabled />;
+Step 5 — Add an edit UI in the Admin Config panel
+Add a new tab function in ConfigSection.tsx following the exact same pattern as existing tabs like FeaturesTab or ShopTab:
+
+
+function MyNewFeatureTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<void> }) {
+  const [form, setForm] = useState({ ...data });
+  const [saving, setSaving] = useState(false);
+  // ... switches / inputs for each field ...
+  return (
+    <>
+      {/* your FieldRow / Switch / Input elements */}
+      <SaveBar onSave={handleSave} saving={saving} />
+    </>
+  );
+}
+Then register it in the <Tabs> in ConfigSection:
+
+
+<TabsTrigger value="myNewFeature">My Feature</TabsTrigger>
+// ...
+<TabsContent value="myNewFeature">
+  {cfg.myNewFeature && (
+    <MyNewFeatureTab data={cfg.myNewFeature} onSave={(v) => save("myNewFeature", v)} />
+  )}
+</TabsContent>
+Summary Checklist
+#	File	What to do
+1	server.config.js	Add default value
+2	serverConfig.service.js DB_SECTIONS	Whitelist new top-level key (if applicable)
+3	publicConfig.controller.js	Expose field publicly (if players need it)
+4	publicConfig.data.ts	Add TypeScript type, use usePublicConfig() in pages
+5	ConfigSection.tsx	Add admin edit tab
+Summary of Code Changes
+Auto-create tables (setup.service.js — new file): Creates 8 OrenjiWeb tables on startup using IF NOT EXISTS guards — completely safe on an existing DB: ActionLog, TicketCategories (+ 5 default categories seeded), Tickets, TicketReplies, TicketAttachments, TicketHistory, News, DownloadLinks, ServerConfig.
+
+server.js: Now calls await setupWebPoolTables() before await loadServerConfig() so all tables are guaranteed to exist before any service runs.
+
+footer.tsx: No longer has hardcoded GAME_NAME = "RAN Online". The brand name, tagline, and copyright line are all derived from publicConfig:
+
+Brand name → config.serverName (falls back to "RAN Online")
+Tagline → config.serverMotto (falls back to the old hardcoded string)
+Copyright → config.footertext if set, otherwise auto-generates © {year} {serverName}. All rights reserved.

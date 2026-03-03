@@ -19,12 +19,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 import { toast } from "sonner";
 
 export default function NewTicketPage() {
   const router = useRouter();
 
   const { user, loading: authLoading } = useAuth();
+  const { config } = usePublicConfig();
   const isAuthed = Boolean(user);
   const shown = useRef(false);
 
@@ -45,6 +47,7 @@ export default function NewTicketPage() {
 
   useEffect(() => {
     if (!isAuthed) return;
+    if (config?.features.ticketSystem === false) return;
 
     async function loadCategories() {
       const data = await getTicketCategories();
@@ -52,7 +55,7 @@ export default function NewTicketPage() {
     }
 
     loadCategories();
-  }, [isAuthed]);
+  }, [isAuthed, config]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,6 +92,20 @@ export default function NewTicketPage() {
             <Ban size={64} />
             <h1 className="text-2xl font-semibold">Forbidden Access</h1>
             <p className="text-muted-foreground">Login first to see content.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (config?.features.ticketSystem === false) {
+    return (
+      <div className="max-w-4xl mx-auto py-20 px-4">
+        <Card>
+          <CardContent className="flex flex-col items-center text-center py-12 space-y-3">
+            <Ban size={64} />
+            <h1 className="text-2xl font-semibold">Feature Unavailable</h1>
+            <p className="text-muted-foreground">The support ticket system is currently disabled.</p>
           </CardContent>
         </Card>
       </div>

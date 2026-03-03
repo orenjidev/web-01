@@ -8,27 +8,32 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 
 export const ServerInfoSection = () => {
+  const { config } = usePublicConfig();
+
+  const serverName = config?.serverName ?? "Server Information";
+  const serverMotto = config?.serverMotto ?? "";
+  const highlights = config?.highlights ?? [];
+
   return (
     <div className="pb-4">
       <Card>
         <CardHeader>
-          <CardTitle> Server Information </CardTitle>
-          <CardDescription>RNG Server</CardDescription>
+          <CardTitle>{serverName}</CardTitle>
+          {serverMotto && <CardDescription>{serverMotto}</CardDescription>}
         </CardHeader>
-        <CardContent>
-          <span className="font-medium text-sm">FEATURES</span>
-          <div className="text-xs">
-            <p>Official Ran GS Server - 2015</p>
-            <p>Optimized Render (GPU Based)</p>
-            <p>8 Class Gameplay (Magician)</p>
-            <p>Official Items - Item Set Option</p>
-            <p>Official Skill Effect</p>
-            <p>Official Contribution System and Accessories</p>
-            <p>Official Item Compound</p>
-          </div>
-        </CardContent>
+        {highlights.length > 0 && (
+          <CardContent>
+            <span className="font-medium text-sm">FEATURES</span>
+            <div className="text-xs mt-1">
+              {highlights.map((h, i) => (
+                <p key={i}>{h}</p>
+              ))}
+            </div>
+          </CardContent>
+        )}
       </Card>
     </div>
   );

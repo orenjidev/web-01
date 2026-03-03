@@ -174,6 +174,7 @@ export const addStaffReplyController = async (req, res) => {
     req.params.ticketId,
     req.body,
     req.ctx,
+    req.files,
   );
 
   if (!result.ok) {

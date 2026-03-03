@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/pagination";
 
 import { useAuth } from "@/context/AuthContext";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 import {
   PriceType,
   ShopCategory,
@@ -54,6 +55,7 @@ function getPriceTypeLabel(priceType: PriceType): string {
 const ItemShopPage = () => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { config, loadingConfig } = usePublicConfig();
 
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<ShopCategory[]>([]);
@@ -83,7 +85,11 @@ const ItemShopPage = () => {
   ----------------------------------------------------- */
 
   const loadShop = useCallback(async () => {
-    if (authLoading || !isAuthed) return;
+    if (authLoading || !isAuthed || loadingConfig) return;
+    if (config?.shop?.enabled === false) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
 
@@ -99,7 +105,7 @@ const ItemShopPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [authLoading, isAuthed]);
+  }, [authLoading, isAuthed, config, loadingConfig]);
 
   /* -----------------------------------------------------
      Initial Load
@@ -201,6 +207,24 @@ const ItemShopPage = () => {
               <h1 className="text-2xl font-semibold">Forbidden Access</h1>
               <p className="text-muted-foreground">
                 Login first to see content.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!loading && !loadingConfig && config?.shop?.enabled === false) {
+    return (
+      <div className="container mx-auto">
+        <Card>
+          <CardContent>
+            <div className="flex flex-col items-center text-center py-8 space-y-2">
+              <Ban size={64} />
+              <h1 className="text-2xl font-semibold">Feature Unavailable</h1>
+              <p className="text-muted-foreground">
+                The item shop is currently disabled.
               </p>
             </div>
           </CardContent>

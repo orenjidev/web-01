@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: {
@@ -20,6 +21,7 @@ export default function AdminLayout({
 }) {
   return (
     <section className="min-h-screen bg-gray-50">
+      <Toaster richColors position="top-right" />
       <main>{children}</main>
     </section>
   );

@@ -5,9 +5,9 @@ import { Facebook, MessageCircle, Youtube } from "lucide-react";
 
 import MaxWidthWrapper from "@/components/maxwidthwrapper";
 import { useModal } from "@/context/ModalContext";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 
-const GAME_NAME = "RAN Online";
-const CURRENT_YEAR = 2026;
+const CURRENT_YEAR = new Date().getFullYear();
 
 const gameLinks = [
   { label: "News", href: "/" },
@@ -15,12 +15,6 @@ const gameLinks = [
   { label: "Rankings", href: "/rankings" },
 ];
 
-const shopLinks = [
-  { label: "Item Shop", href: "/itemshop" },
-  { label: "Top-Up", href: "/topup" },
-];
-
-const supportLinks = [{ label: "Support Tickets", href: "/tickets" }];
 
 function FooterLinkGroup({
   heading,
@@ -41,6 +35,15 @@ function FooterLinkGroup({
 
 export default function Footer() {
   const { openModal } = useModal();
+  const { config } = usePublicConfig();
+
+  const serverName = config?.serverName ?? "RAN Online";
+  const serverMotto = config?.serverMotto;
+  const footerText = config?.footertext;
+
+  const shopEnabled = config?.shop?.enabled !== false;
+  const topUpEnabled = config?.features?.topUp !== false;
+  const ticketsEnabled = config?.features?.ticketSystem !== false;
 
   return (
     <footer className="bg-background border-t border-border mt-8">
@@ -49,9 +52,9 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="col-span-2 md:col-span-1 flex flex-col">
-            <p className="text-sm font-bold leading-tight">{GAME_NAME}</p>
+            <p className="text-sm font-bold leading-tight">{serverName}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Your adventure awaits. Play free today.
+              {serverMotto || "Your adventure awaits. Play free today."}
             </p>
 
             {/* Social icons */}
@@ -95,15 +98,16 @@ export default function Footer() {
 
           {/* Shop */}
           <FooterLinkGroup heading="Shop">
-            {shopLinks.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {l.label}
+            {shopEnabled && (
+              <Link href="/itemshop" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Item Shop
               </Link>
-            ))}
+            )}
+            {topUpEnabled && (
+              <Link href="/topup" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Top-Up
+              </Link>
+            )}
           </FooterLinkGroup>
 
           {/* Account */}
@@ -131,15 +135,11 @@ export default function Footer() {
 
           {/* Support */}
           <FooterLinkGroup heading="Support">
-            {supportLinks.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {l.label}
+            {ticketsEnabled && (
+              <Link href="/tickets" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Support Tickets
               </Link>
-            ))}
+            )}
           </FooterLinkGroup>
 
         </div>
@@ -147,7 +147,7 @@ export default function Footer() {
 
       {/* Copyright */}
       <div className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        © {CURRENT_YEAR} {GAME_NAME}. All rights reserved.
+        {footerText || `© ${CURRENT_YEAR} ${serverName}. All rights reserved.`}
       </div>
     </footer>
   );

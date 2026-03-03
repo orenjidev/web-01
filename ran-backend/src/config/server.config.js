@@ -1,6 +1,6 @@
 // config/baseServerConfig.js
 
-export const baseServerConfig = Object.freeze({
+export const baseServerConfig = {
   /**
    * =====================================================
    * Database Configuration
@@ -31,6 +31,15 @@ export const baseServerConfig = Object.freeze({
     serverMotto: "",
     ePointsName: "E-Points",
     footer: "© RNG Development",
+    highlights: [
+      "Official Ran GS Server - 2015",
+      "Optimized Render (GPU Based)",
+      "8 Class Gameplay (Magician)",
+      "Official Items - Item Set Option",
+      "Official Skill Effect",
+      "Official Contribution System and Accessories",
+      "Official Item Compound",
+    ],
   },
 
   /**
@@ -196,4 +205,4 @@ export const baseServerConfig = Object.freeze({
     twitch: "",
     steam: "",
   },
-});
+};
