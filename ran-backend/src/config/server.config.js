@@ -1,0 +1,199 @@
+// config/baseServerConfig.js
+
+export const baseServerConfig = Object.freeze({
+  /**
+   * =====================================================
+   * Database Configuration
+   * =====================================================
+   */
+  database: {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+
+    databases: {
+      cp: process.env.DB_NAME_WEB || "OrenjiWeb",
+      game: process.env.DB_NAME_GAME || "RG2Game",
+      game: process.env.DB_NAME_SHOP || "RG2Shop",
+      game: process.env.DB_NAME_LOG || "RG2Log",
+      game: process.env.DB_NAME_USER || "RG2User",
+    },
+  },
+
+  /**
+   * =====================================================
+   * Server Definitions (Public Metadata)
+   * =====================================================
+   */
+  definitions: {
+    serverName: "Kronos RAN",
+    serverWebsite: "https://example.com",
+    serverMotto: "",
+    ePointsName: "E-Points",
+    footer: "© RNG Development",
+  },
+
+  /**
+   * =====================================================
+   * Core Server Options
+   * =====================================================
+   */
+  coreOptions: {
+    maintenanceMode: false,
+    enableLogs: true,
+    ismd5: true, // legacy compatibility only
+  },
+
+  /**
+   * =====================================================
+   * Feature Toggles
+   * =====================================================
+   */
+  features: {
+    changePassword: true,
+    changePin: true,
+    changeEmail: true,
+    topup: true,
+    webMarket: false,
+    characterDelete: true,
+    ticketSystem: true,
+  },
+
+  /**
+   * =====================================================
+   * Game Version
+   * =====================================================
+   * Controls how character data is stored / retrieved.
+   *
+   * "new"    — Items in DB tables via stored procedures
+   *            (sp_ItemGetItemList, sp_ItemSave, etc.)
+   *
+   * "legacy" — Items stored as binary blobs (Image columns)
+   *            (ChaPutOnItems, ChaInvenItems, etc.)
+   *            Requires blob deserializers per version.
+   */
+  gameVersion: {
+    itemStorage: "new", // "new" | "legacy"
+  },
+
+  /**
+   * =====================================================
+   * Character Systems
+   * =====================================================
+   */
+  changeSchool: {
+    title: "Change School",
+    enabled: true,
+    fee: 0,
+    currency: "ep", // ep | vp | gold
+  },
+
+  changeClass: {
+    title: "Change Class",
+    enabled: true,
+    fee: 0,
+    currency: "ep", // ep | vp | gold
+  },
+
+  resetStats: {
+    title: "Reset Stats",
+    enabled: true,
+    fee: 1,
+    currency: "gold", // ep | vp | gold
+  },
+
+  reborn: {
+    title: "Reborn",
+    enabled: true,
+    currency: "gold",
+    maxReborn: 50,
+    tiers: [
+      { from: 0, to: 20, levelReq: 170, fee: 1, statReward: 150 },
+      { from: 21, to: 30, levelReq: 180, fee: 1, statReward: 150 },
+      { from: 31, to: 40, levelReq: 190, fee: 1, statReward: 150 },
+      { from: 41, to: 50, levelReq: 200, fee: 1, statReward: 150 },
+    ],
+  },
+
+  /**
+   * =====================================================
+   * Conversion Systems (Pending)
+   * =====================================================
+   */
+  convertfeature: {
+    vp2ep: {
+      enabled: false,
+      min: 20,
+      rate: 1,
+    },
+    ep2vp: {
+      enabled: false,
+      min: 20,
+      rate: 1,
+    },
+  },
+
+  /**
+   * =====================================================
+   * Voting System (Pending)
+   * =====================================================
+   */
+  votingSystem: {
+    enabled: false,
+    levelRequirement: 200,
+    voteIntervalHours: 12,
+    reward: 2,
+  },
+
+  /**
+   * =====================================================
+   * Shop Configuration
+   * =====================================================
+   */
+  shop: {
+    enabled: true,
+    voteShop: true,
+    premiumShop: true,
+  },
+
+  /**
+   * =====================================================
+   * UI Helper Limits
+   * =====================================================
+   */
+  uihelper: {
+    max_topnews: 5,
+    max_toprank: 10,
+    max_rankall: 50,
+  },
+
+  /**
+   * =====================================================
+   * Class Availability
+   * =====================================================
+   */
+  classes: {
+    brawler: true,
+    swordsman: true,
+    archer: true,
+    shaman: true,
+    extreme: true,
+    gunner: true,
+    assassin: false,
+    magician: false,
+  },
+
+  /**
+   * =====================================================
+   * Social Links
+   * =====================================================
+   */
+  social: {
+    enabled: true,
+    facebook: "https://facebook.com/",
+    x: "",
+    youtube: "",
+    twitch: "",
+    steam: "",
+  },
+});

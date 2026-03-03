@@ -1,0 +1,518 @@
+import { getUserPool, getWebPool } from "../loaders/mssql.js";
+import { getMessage } from "../constants/messages.js";
+import { logAction } from "./actionlog.service.js";
+
+/* =====================================================
+   Helpers
+===================================================== */
+
+const isStaffUser = async (userNum) => {
+  const pool = await getUserPool();
+
+  const result = await pool.request().input("UserNum", userNum).query(`
+      SELECT UserType
+      FROM dbo.UserInfo
+      WHERE UserNum = @UserNum
+    `);
+
+  return result.recordset.length > 0 && result.recordset[0].UserType >= 50;
+};
+
+/* =====================================================
+   USER FUNCTIONS
+===================================================== */
+export const getTicketCategories = async () => {
+  const pool = await getWebPool();
+
+  const result = await pool.request().query(`
+    SELECT
+      CategoryID,
+      CategoryName
+    FROM dbo.TicketCategories
+    WHERE IsActive = 1
+    ORDER BY CategoryName ASC
+  `);
+
+  return { ok: true, categories: result.recordset };
+};
+
+export const createTicket = async (body, ctx = {}, files = []) => {
+  const MSG = getMessage(ctx.lang);
+
+  if (!body || typeof body !== "object") {
+    return { ok: false, message: MSG.COMMON.INVALID_BODY };
+  }
+
+  const { categoryId, subject, description, priority, characterName } = body;
+
+  const gameId = ctx.user?.userid;
+
+  if (!categoryId || !subject || !description) {
+    return { ok: false, message: MSG.GENERAL.FILL_FORMS };
+  }
+
+  const webPool = await getWebPool();
+
+  const categoryCheck = await webPool.request().input("CategoryID", categoryId)
+    .query(`
+      SELECT CategoryID
+      FROM dbo.TicketCategories
+      WHERE CategoryID = @CategoryID AND IsActive = 1
+    `);
+
+  if (categoryCheck.recordset.length === 0) {
+    return { ok: false, message: MSG.TICKET.INVALID_CATEGORY };
+  }
+
+  const ticketPriority = priority || "Low";
+  const transaction = webPool.transaction();
+
+  try {
+    await transaction.begin();
+
+    const result = await transaction
+      .request()
+      .input("UserNum", ctx.user.userNum)
+      .input("CategoryID", categoryId)
+      .input("Subject", subject)
+      .input("Description", description)
+      .input("Priority", ticketPriority)
+      .input("CharacterName", characterName || null)
+      .input("GameID", gameId || null).query(`
+        INSERT INTO dbo.Tickets
+        (UserNum, CategoryID, Subject, Description, Priority, CharacterName, GameID)
+        OUTPUT INSERTED.*
+        VALUES
+        (@UserNum, @CategoryID, @Subject, @Description, @Priority, @CharacterName, @GameID)
+      `);
+
+    const ticket = result.recordset[0];
+
+    // Add Attachment Upload
+    if (files && files.length > 0) {
+      for (const file of files) {
+        await transaction
+          .request()
+          .input("TicketID", ticket.TicketID)
+          .input("FileName", file.originalname)
+          .input("FilePath", file.filename)
+          .input("FileSize", file.size)
+          .input("FileType", file.mimetype)
+          .input("UploadedByUserNum", ctx.user.userNum).query(`
+        INSERT INTO dbo.TicketAttachments
+        (TicketID, ReplyID, FileName, FilePath, FileSize, FileType, UploadedByUserNum, UploadedAt)
+        VALUES
+        (@TicketID, NULL, @FileName, @FilePath, @FileSize, @FileType, @UploadedByUserNum, GETDATE())
+      `);
+      }
+    }
+
+    await transaction
+      .request()
+      .input("TicketID", ticket.TicketID)
+      .input("ActionType", "Created")
+      .input("NewValue", "Ticket opened")
+      .input("PerformedByUserNum", ctx.user.userNum).query(`
+        INSERT INTO dbo.TicketHistory
+        (TicketID, ActionType, NewValue, PerformedByUserNum)
+        VALUES
+        (@TicketID, @ActionType, @NewValue, @PerformedByUserNum)
+      `);
+
+    await transaction.commit();
+
+    await logAction({
+      userId: ctx.user.userNum,
+      actionType: "CREATE",
+      entityType: "TICKET",
+      entityId: ticket.TicketID,
+      description: `Created ticket: ${subject}`,
+      ipAddress: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
+
+    return {
+      ok: true,
+      message: `Ticket #${ticket.TicketID} created successfully`,
+      ticket,
+    };
+  } catch (err) {
+    await transaction.rollback();
+    return { ok: false, message: MSG.GENERAL.ERROR };
+  }
+};
+
+export const getUserTickets = async (filters = {}, ctx = {}) => {
+  const pool = await getWebPool();
+
+  let query = `
+    SELECT
+      t.TicketID,
+      t.Subject,
+      t.Status,
+      t.Priority,
+      t.CreatedAt,
+      tc.CategoryName
+    FROM dbo.Tickets t
+    LEFT JOIN dbo.TicketCategories tc ON t.CategoryID = tc.CategoryID
+    WHERE t.UserNum = @UserNum
+  `;
+
+  const request = pool.request().input("UserNum", ctx.user.userNum);
+
+  if (filters.status) {
+    query += " AND t.Status = @Status";
+    request.input("Status", filters.status);
+  }
+
+  if (filters.categoryId) {
+    query += " AND t.CategoryID = @CategoryID";
+    request.input("CategoryID", filters.categoryId);
+  }
+
+  query += " ORDER BY t.CreatedAt DESC";
+
+  const result = await request.query(query);
+
+  return { ok: true, tickets: result.recordset };
+};
+
+export const getTicketDetails = async (ticketId, ctx = {}) => {
+  const MSG = getMessage(ctx.lang);
+  if (!ticketId) return { ok: false, message: MSG.COMMON.INVALID_BODY };
+
+  const pool = await getWebPool();
+
+  // Validate ownership
+  const ticketResult = await pool
+    .request()
+    .input("TicketID", ticketId)
+    .input("UserNum", ctx.user.userNum).query(`
+      SELECT *
+      FROM dbo.Tickets
+      WHERE TicketID = @TicketID AND UserNum = @UserNum
+    `);
+
+  if (ticketResult.recordset.length === 0) {
+    return { ok: false, message: MSG.TICKET.NOT_FOUND };
+  }
+
+  // Fetch ticket-level attachments
+  const attachmentsResult = await pool.request().input("TicketID", ticketId)
+    .query(`
+      SELECT
+        AttachmentID,
+        FileName,
+        FilePath,
+        FileSize,
+        FileType,
+        UploadedAt
+      FROM dbo.TicketAttachments
+      WHERE TicketID = @TicketID
+        AND ReplyID IS NULL
+      ORDER BY UploadedAt ASC
+    `);
+
+  // Fetch replies + reply attachments
+  const repliesResult = await pool.request().input("TicketID", ticketId).query(`
+      SELECT
+        r.ReplyID,
+        r.UserNum,
+        r.Message,
+        r.IsStaffReply,
+        r.CreatedAt,
+        a.AttachmentID,
+        a.FileName,
+        a.FilePath,
+        a.FileSize,
+        a.FileType
+      FROM dbo.TicketReplies r
+      LEFT JOIN dbo.TicketAttachments a
+        ON r.ReplyID = a.ReplyID
+      WHERE r.TicketID = @TicketID
+      ORDER BY r.CreatedAt ASC
+    `);
+
+  // Group reply attachments
+  const repliesMap = {};
+
+  for (const row of repliesResult.recordset) {
+    if (!repliesMap[row.ReplyID]) {
+      repliesMap[row.ReplyID] = {
+        ReplyID: row.ReplyID,
+        UserNum: row.UserNum,
+        Message: row.Message,
+        IsStaffReply: row.IsStaffReply,
+        CreatedAt: row.CreatedAt,
+        attachments: [],
+      };
+    }
+
+    if (row.AttachmentID) {
+      repliesMap[row.ReplyID].attachments.push({
+        AttachmentID: row.AttachmentID,
+        FileName: row.FileName,
+        FilePath: row.FilePath,
+        FileSize: row.FileSize,
+        FileType: row.FileType,
+      });
+    }
+  }
+
+  return {
+    ok: true,
+    ticket: ticketResult.recordset[0],
+    replies: Object.values(repliesMap),
+    attachments: attachmentsResult.recordset,
+  };
+};
+
+export const addTicketReply = async (ticketId, body, ctx = {}, files = []) => {
+  const MSG = getMessage(ctx.lang);
+
+  if (!ticketId || !body?.message) {
+    return { ok: false, message: MSG.COMMON.INVALID_BODY };
+  }
+
+  const pool = await getWebPool();
+
+  // Validate ownership
+  const ticketCheck = await pool
+    .request()
+    .input("TicketID", ticketId)
+    .input("UserNum", ctx.user.userNum).query(`
+      SELECT TicketID
+      FROM dbo.Tickets
+      WHERE TicketID = @TicketID AND UserNum = @UserNum
+    `);
+
+  if (ticketCheck.recordset.length === 0) {
+    return { ok: false, message: MSG.TICKET.NOT_FOUND };
+  }
+
+  const transaction = pool.transaction();
+
+  try {
+    await transaction.begin();
+
+    // Insert reply and get ReplyID
+    const replyResult = await transaction
+      .request()
+      .input("TicketID", ticketId)
+      .input("UserNum", ctx.user.userNum)
+      .input("Message", body.message).query(`
+        INSERT INTO dbo.TicketReplies
+        (TicketID, UserNum, Message, IsStaffReply)
+        OUTPUT INSERTED.ReplyID
+        VALUES
+        (@TicketID, @UserNum, @Message, 0)
+      `);
+
+    const replyId = replyResult.recordset[0].ReplyID;
+
+    // Insert attachments if present
+    if (files && files.length > 0) {
+      for (const file of files) {
+        await transaction
+          .request()
+          .input("TicketID", ticketId)
+          .input("ReplyID", replyId)
+          .input("FileName", file.originalname)
+          .input("FilePath", file.filename)
+          .input("FileSize", file.size)
+          .input("FileType", file.mimetype)
+          .input("UploadedByUserNum", ctx.user.userNum).query(`
+            INSERT INTO dbo.TicketAttachments
+            (TicketID, ReplyID, FileName, FilePath, FileSize, FileType, UploadedByUserNum, UploadedAt)
+            VALUES
+            (@TicketID, @ReplyID, @FileName, @FilePath, @FileSize, @FileType, @UploadedByUserNum, GETDATE())
+          `);
+      }
+    }
+
+    await transaction.commit();
+
+    await logAction({
+      userId: ctx.user?.userNum ?? null,
+      actionType: "REPLY",
+      entityType: "TICKET",
+      entityId: ticketId,
+      description: MSG.LOG.ACTION_TICKET_REPLY,
+      ipAddress: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
+
+    return { ok: true, message: MSG.TICKET.REPLY_ADDED };
+  } catch (err) {
+    await transaction.rollback();
+    return { ok: false, message: MSG.GENERAL.ERROR };
+  }
+};
+
+/* =====================================================
+   STAFF FUNCTIONS (RESTORED)
+===================================================== */
+
+export const getAllTicketsStaff = async (filters = {}, ctx = {}) => {
+  const MSG = getMessage(ctx.lang);
+  if (!(await isStaffUser(ctx.user.userNum))) {
+    return { ok: false, message: MSG.AUTH.STAFF_REQUIRED };
+  }
+
+  const pool = await getWebPool();
+  const request = pool.request();
+
+  let query = `
+    SELECT
+      t.TicketID,
+      t.Subject,
+      t.Status,
+      t.Priority,
+      t.CreatedAt,
+      u.UserID AS Username
+    FROM dbo.Tickets t
+    LEFT JOIN [${process.env.DB_NAME_USER}].dbo.UserInfo u
+      ON t.UserNum = u.UserNum
+    WHERE 1=1
+  `;
+
+  if (filters.status) {
+    query += " AND t.Status = @Status";
+    request.input("Status", filters.status);
+  }
+
+  query += " ORDER BY t.CreatedAt DESC";
+
+  const result = await request.query(query);
+  return { ok: true, tickets: result.recordset };
+};
+
+export const getTicketDetailsStaff = async (ticketId, ctx = {}) => {
+  const MSG = getMessage(ctx.lang);
+  if (!(await isStaffUser(ctx.user.userNum))) {
+    return { ok: false, message: MSG.AUTH.STAFF_REQUIRED };
+  }
+
+  const pool = await getWebPool();
+
+  const result = await pool.request().input("TicketID", ticketId).query(`
+      SELECT *
+      FROM dbo.Tickets
+      WHERE TicketID = @TicketID
+    `);
+
+  if (result.recordset.length === 0) {
+    return { ok: false, message: MSG.TICKET.NOT_FOUND };
+  }
+
+  return { ok: true, ticket: result.recordset[0] };
+};
+
+export const updateTicketStatus = async (ticketId, body, ctx = {}) => {
+  const MSG = getMessage(ctx.lang);
+
+  if (!(await isStaffUser(ctx.user.userNum))) {
+    return { ok: false, message: MSG.AUTH.STAFF_REQUIRED };
+  }
+
+  if (!body?.status) {
+    return { ok: false, message: MSG.COMMON.INVALID_BODY };
+  }
+
+  const pool = await getWebPool();
+
+  await pool.request().input("TicketID", ticketId).input("Status", body.status)
+    .query(`
+      UPDATE dbo.Tickets
+      SET Status = @Status, UpdatedAt = GETDATE()
+      WHERE TicketID = @TicketID
+    `);
+
+  await logAction({
+    userId: ctx.user?.userNum ?? null,
+    actionType: "UPDATE",
+    entityType: "TICKET",
+    entityId: ticketId,
+    description: MSG.LOG.ACTION_TICKET_STATUS_UPDATE,
+    ipAddress: ctx.ip,
+    userAgent: ctx.userAgent,
+  });
+
+  return { ok: true, message: MSG.TICKET.STATUS_UPDATED };
+};
+
+export const assignTicketToStaff = async (ticketId, body, ctx = {}) => {
+  const MSG = getMessage(ctx.lang);
+
+  if (!(await isStaffUser(ctx.user.userNum))) {
+    return { ok: false, message: MSG.AUTH.STAFF_REQUIRED };
+  }
+
+  const pool = await getWebPool();
+
+  await pool
+    .request()
+    .input("TicketID", ticketId)
+    .input("StaffUserNum", body.staffUserNum).query(`
+      UPDATE dbo.Tickets
+      SET AssignedToStaffUserNum = @StaffUserNum, UpdatedAt = GETDATE()
+      WHERE TicketID = @TicketID
+    `);
+
+  await logAction({
+    userId: ctx.user?.userNum ?? null,
+    actionType: "ASSIGN",
+    entityType: "TICKET",
+    entityId: ticketId,
+    description: MSG.LOG.ACTION_TICKET_ASSIGN,
+    ipAddress: ctx.ip,
+    userAgent: ctx.userAgent,
+  });
+
+  return { ok: true, message: MSG.TICKET.ASSIGNED };
+};
+
+export const addStaffReply = async (ticketId, body, ctx = {}) => {
+  const MSG = getMessage(ctx.lang);
+
+  if (!(await isStaffUser(ctx.user.userNum))) {
+    return { ok: false, message: MSG.AUTH.STAFF_REQUIRED };
+  }
+
+  const pool = await getWebPool();
+
+  await pool
+    .request()
+    .input("TicketID", ticketId)
+    .input("UserNum", ctx.user.userNum)
+    .input("Message", body.message).query(`
+      INSERT INTO dbo.TicketReplies
+      (TicketID, UserNum, Message, IsStaffReply)
+      VALUES
+      (@TicketID, @UserNum, @Message, 1)
+    `);
+
+  await logAction({
+    userId: ctx.user?.userNum ?? null,
+    actionType: "REPLY",
+    entityType: "TICKET",
+    entityId: ticketId,
+    description: MSG.LOG.ACTION_TICKET_REPLY,
+    ipAddress: ctx.ip,
+    userAgent: ctx.userAgent,
+  });
+
+  return { ok: true, message: MSG.TICKET.REPLY_ADDED };
+};
+
+export const getStaffList = async () => {
+  const pool = await getUserPool();
+
+  const result = await pool.request().query(`
+    SELECT UserNum, UserID, UserType
+    FROM dbo.UserInfo
+    WHERE UserType >= 50
+  `);
+
+  return { ok: true, staff: result.recordset };
+};
