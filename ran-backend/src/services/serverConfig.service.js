@@ -17,6 +17,7 @@ const DB_SECTIONS = [
   "uihelper",
   "classes",
   "social",
+  "sliderConfig",
 ];
 
 const CREATE_TABLE_SQL = `

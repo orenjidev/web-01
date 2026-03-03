@@ -1,6 +1,7 @@
 import MaxWidthWrapper from "@/components/maxwidthwrapper";
-import ImageSlider from "@/components/imageslider";
 import NavBar from "@/components/navbar";
+import BannerSlider from "@/components/BannerSlider";
+import ContentSlider from "@/components/ContentSlider";
 import { Toaster } from "@/components/ui/sonner";
 import { ServerInfoSection } from "@/components/serverinfo";
 import DownloadSection from "@/components/download";
@@ -23,20 +24,9 @@ export default function MainLayout({
     <>
       <NavBar />
       <ModalManager />
-      {/* IMAGE SLIDER */}
+      {/* BANNER SLIDER */}
       <div className="-mt-24">
-        <ImageSlider
-          slides={[
-            {
-              src: "/images/slider/slide_1.jpeg",
-              caption: "Chapter 18: Paragon",
-            },
-          ]}
-          height="h-[500px]"
-          autoPlay
-          interval={3000}
-          rounded="rounded-xl"
-        />
+        <BannerSlider />
         <div className="mx-auto bg-background border-b border-black/20 pt-4 mb-2">
           <DownloadSection />
         </div>
@@ -49,22 +39,7 @@ export default function MainLayout({
               </div>
 
               <div className="md:col-span-6 space-y-4">
-                <ImageSlider
-                  slides={[
-                    {
-                      src: "/images/slider/slide_1.jpeg",
-                      caption: "Chapter 18: Paragon",
-                    },
-                    {
-                      src: "/images/slider/slide_2.jpeg",
-                      caption: "Chapter 19: Revelation",
-                    },
-                  ]}
-                  height="h-[300px]"
-                  autoPlay
-                  interval={3000}
-                  rounded="rounded-xl"
-                />
+                <ContentSlider />
                 {children}
               </div>
 

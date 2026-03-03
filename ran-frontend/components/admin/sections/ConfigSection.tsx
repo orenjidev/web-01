@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -16,7 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getServerConfig, saveConfigSection } from "@/lib/data/admin.config.data";
+import { getServerConfig, saveConfigSection, uploadSliderImage } from "@/lib/data/admin.config.data";
 
 /* ─────────────────────────────
    Small helpers
@@ -138,6 +139,16 @@ function CoreOptionsTab({ data, onSave }: { data: any; onSave: (v: any) => Promi
       <FieldRow>
         <FieldLabel label="MD5 Passwords" desc="Legacy MD5 password encoding (disable only if migrated)" />
         <Switch checked={!!form.ismd5} onCheckedChange={(v) => setForm((p: any) => ({ ...p, ismd5: v }))} />
+      </FieldRow>
+      <FieldRow>
+        <FieldLabel label="Default Language" desc="Site-wide default language for all users" />
+        <Select value={form.defaultLanguage ?? "en"} onValueChange={(v) => setForm((p: any) => ({ ...p, defaultLanguage: v }))}>
+          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="en">English</SelectItem>
+            <SelectItem value="th">Thai</SelectItem>
+          </SelectContent>
+        </Select>
       </FieldRow>
       <SaveBar onSave={handleSave} saving={saving} />
     </div>
@@ -562,6 +573,166 @@ function VotingTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<vo
 }
 
 /* ─────────────────────────────
+   Section: Slider Config
+───────────────────────────── */
+
+interface Slide {
+  src: string;
+  caption: string;
+  enabled: boolean;
+}
+
+function SlideList({
+  label,
+  slides,
+  onChange,
+}: {
+  label: string;
+  slides: Slide[];
+  onChange: (slides: Slide[]) => void;
+}) {
+  const [uploading, setUploading] = useState<number | null>(null);
+
+  function updateSlide(idx: number, field: keyof Slide, value: string | boolean) {
+    const next = slides.map((s, i) => (i === idx ? { ...s, [field]: value } : s));
+    onChange(next);
+  }
+
+  function addSlide() {
+    onChange([...slides, { src: "", caption: "", enabled: true }]);
+  }
+
+  function removeSlide(idx: number) {
+    onChange(slides.filter((_, i) => i !== idx));
+  }
+
+  async function handleFileChange(idx: number, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setUploading(idx);
+    try {
+      const url = await uploadSliderImage(file);
+      updateSlide(idx, "src", url);
+      toast.success("Image uploaded.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  return (
+    <div className="mb-6 last:mb-0">
+      <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">{label}</p>
+      <div className="space-y-2">
+        {slides.map((slide, idx) => (
+          <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/20">
+            <Switch
+              checked={slide.enabled}
+              onCheckedChange={(v) => updateSlide(idx, "enabled", v)}
+              className="shrink-0"
+            />
+            {/* Thumbnail preview */}
+            <div className="shrink-0 w-14 h-9 rounded border border-border bg-muted overflow-hidden flex items-center justify-center">
+              {slide.src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={slide.src} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[10px] text-muted-foreground">No img</span>
+              )}
+            </div>
+            <Input
+              className="flex-1 min-w-0 text-xs h-8"
+              placeholder="Image URL or /images/slider/slide.jpg"
+              value={slide.src}
+              onChange={(e) => updateSlide(idx, "src", e.target.value)}
+            />
+            <Input
+              className="w-40 shrink-0 text-xs h-8"
+              placeholder="Caption"
+              value={slide.caption}
+              onChange={(e) => updateSlide(idx, "caption", e.target.value)}
+            />
+            {/* Upload button */}
+            <label className="shrink-0">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="sr-only"
+                disabled={uploading !== null}
+                onChange={(e) => handleFileChange(idx, e)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 pointer-events-none"
+                disabled={uploading !== null}
+                aria-label="Upload image"
+                asChild
+              >
+                <span>
+                  {uploading === idx
+                    ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    : <Upload className="h-3.5 w-3.5" />}
+                </span>
+              </Button>
+            </label>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => removeSlide(idx)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+        {slides.length === 0 && (
+          <p className="text-xs text-muted-foreground py-1">No slides. Add one below.</p>
+        )}
+      </div>
+      <Button variant="outline" size="sm" className="mt-2 h-7 text-xs gap-1.5" onClick={addSlide}>
+        <Plus className="h-3.5 w-3.5" />
+        Add Slide
+      </Button>
+    </div>
+  );
+}
+
+function SlidesTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<void> }) {
+  const [bannerSlides, setBannerSlides] = useState<Slide[]>(data.bannerSlides ?? []);
+  const [contentSlides, setContentSlides] = useState<Slide[]>(data.contentSlides ?? []);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setBannerSlides(data.bannerSlides ?? []);
+    setContentSlides(data.contentSlides ?? []);
+  }, [data]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave({ bannerSlides, contentSlides });
+      toast.success("Sliders saved.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <SlideList label="Banner Slides (top hero)" slides={bannerSlides} onChange={setBannerSlides} />
+      <SlideList label="Content Slides (middle section)" slides={contentSlides} onChange={setContentSlides} />
+      <SaveBar onSave={handleSave} saving={saving} />
+    </div>
+  );
+}
+
+/* ─────────────────────────────
    Main ConfigSection component
 ───────────────────────────── */
 
@@ -673,6 +844,10 @@ export function ConfigSection() {
           <Card className="col-span-2">
             <CardHeader><CardTitle className="text-sm">Social Links</CardTitle></CardHeader>
             <CardContent><SocialTab data={config.social ?? {}} onSave={makeSaver("social")} /></CardContent>
+          </Card>
+          <Card className="col-span-2">
+            <CardHeader><CardTitle className="text-sm">Sliders</CardTitle></CardHeader>
+            <CardContent><SlidesTab data={config.sliderConfig ?? {}} onSave={makeSaver("sliderConfig")} /></CardContent>
           </Card>
         </TabsContent>
       </Tabs>

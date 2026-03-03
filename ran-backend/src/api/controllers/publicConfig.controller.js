@@ -9,6 +9,12 @@ export function getPublicConfig(req, res) {
     ePointsName: baseServerConfig.definitions.ePointsName,
     footertext: baseServerConfig.definitions.footer,
     highlights: baseServerConfig.definitions.highlights ?? [],
+    defaultLanguage: baseServerConfig.coreOptions.defaultLanguage ?? "en",
+
+    sliderConfig: {
+      bannerSlides: baseServerConfig.sliderConfig.bannerSlides ?? [],
+      contentSlides: baseServerConfig.sliderConfig.contentSlides ?? [],
+    },
 
     features: {
       changePassword: baseServerConfig.features.changePassword,

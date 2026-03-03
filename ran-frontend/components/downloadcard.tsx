@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { DownloadLink, getDownloadLinks } from "@/lib/data/download.data";
+import { useT } from "@/context/LanguageContext";
 
 /* =====================================================
    Component
@@ -20,6 +21,7 @@ import { DownloadLink, getDownloadLinks } from "@/lib/data/download.data";
 export default function DownloadCard() {
   const [downloadlinks, setDownloadLinks] = useState<DownloadLink[]>([]);
   const [loading, setLoading] = useState(true);
+  const t = useT();
 
   useEffect(() => {
     let cancelled = false;
@@ -51,13 +53,13 @@ export default function DownloadCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Download Links</CardTitle>
-        <CardDescription>Download only from trusted sources</CardDescription>
+        <CardTitle>{t.download.downloadLinks}</CardTitle>
+        <CardDescription>{t.download.downloadLinksDesc}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         {loading ? (
           <p className="text-sm text-muted-foreground text-center">
-            Loading downloads…
+            {t.download.loadingDownloads}
           </p>
         ) : (
           Object.entries(
@@ -102,9 +104,7 @@ export default function DownloadCard() {
                   </Button>
 
                   <p className="text-xs flex justify-end text-muted-foreground">
-                    {`Last Modified Date: ${new Date(
-                      link.date,
-                    ).toLocaleDateString()}`}
+                    {`${t.download.lastModified} ${new Date(link.date).toLocaleDateString()}`}
                   </p>
                 </div>
               ))}

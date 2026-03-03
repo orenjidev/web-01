@@ -58,10 +58,12 @@ import {
   redeemTopup,
   TopupHistoryItem,
 } from "@/lib/data/topup.data";
+import { useT } from "@/context/LanguageContext";
 
 export default function AccountPanel() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const t = useT();
 
   const [selectedOption, setSelectedOption] = useState("account");
   const [account, setAccount] = useState<AccountInfo | null>(null);
@@ -117,31 +119,31 @@ export default function AccountPanel() {
 
   const { config: publicConfig, loadingConfig } = usePublicConfig();
   const accountPanelOptions = [
-    { label: "Account", value: "account" },
-    { label: "Characters", value: "characters" },
+    { label: t.account.manageAccount, value: "account" },
+    { label: t.account.manageCharacters, value: "characters" },
 
     ...(publicConfig?.gameoptions?.changeSchool?.enabled
-      ? [{ label: "Change School", value: "changeSchool" as const }]
+      ? [{ label: t.account.changeSchool, value: "changeSchool" as const }]
       : []),
 
     ...(publicConfig?.gameoptions?.resetStats?.enabled
-      ? [{ label: "Reset Stats", value: "resetStats" as const }]
+      ? [{ label: t.account.resetStats, value: "resetStats" as const }]
       : []),
 
     ...(publicConfig?.gameoptions?.reborn?.enabled
-      ? [{ label: "Reborn", value: "reborn" as const }]
+      ? [{ label: t.account.rebornCharacter, value: "reborn" as const }]
       : []),
 
     ...(publicConfig?.gameoptions?.changeClass?.enabled
-      ? [{ label: "Change Class", value: "changeClass" as const }]
+      ? [{ label: t.account.changeClass, value: "changeClass" as const }]
       : []),
 
     ...(publicConfig?.features.topUp
-      ? [{ label: "Top Up", value: "topUp" as const }]
+      ? [{ label: t.account.topUp, value: "topUp" as const }]
       : []),
 
     ...(publicConfig?.features.topUp
-      ? [{ label: "Top Up History", value: "topUpHistory" as const }]
+      ? [{ label: t.account.topUpHistory, value: "topUpHistory" as const }]
       : []),
   ];
 
@@ -298,22 +300,22 @@ export default function AccountPanel() {
       !newPassword ||
       !confirmNewPassword
     ) {
-      toast.error("All fields are required.");
+      toast.error(t.account.errors.allRequired);
       return;
     }
 
     if (oldPassword !== confirmOldPassword) {
-      toast.error("Old passwords do not match.");
+      toast.error(t.account.errors.oldPwMismatch);
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      toast.error("New passwords do not match.");
+      toast.error(t.account.errors.newPwMismatch);
       return;
     }
 
     if (pincode !== confirmPincode) {
-      toast.error("Pincodes do not match.");
+      toast.error(t.account.errors.pinMismatch);
       return;
     }
 
@@ -345,12 +347,12 @@ export default function AccountPanel() {
   -------------------------------------------------- */
   async function handleEmailChange() {
     if (!newEmail || !confirmEmail || !pincode) {
-      toast.error("All fields are required.");
+      toast.error(t.account.errors.allRequired);
       return;
     }
 
     if (newEmail !== confirmEmail) {
-      toast.error("Emails do not match.");
+      toast.error(t.account.errors.emailMismatch);
       return;
     }
 
@@ -384,22 +386,22 @@ export default function AccountPanel() {
       !emailForPin ||
       !confirmEmailForPin
     ) {
-      toast.error("All fields are required.");
+      toast.error(t.account.errors.allRequired);
       return;
     }
 
     if (oldPin !== confirmOldPin) {
-      toast.error("Old pincodes do not match.");
+      toast.error(t.account.errors.oldPinMismatch);
       return;
     }
 
     if (newPin !== confirmNewPin) {
-      toast.error("New pincodes do not match.");
+      toast.error(t.account.errors.newPinMismatch);
       return;
     }
 
     if (emailForPin !== confirmEmailForPin) {
-      toast.error("Emails do not match.");
+      toast.error(t.account.errors.emailMismatch);
       return;
     }
 
@@ -428,9 +430,7 @@ export default function AccountPanel() {
 
   // Delete Character
   async function handleDeleteCharacter(id: number) {
-    const confirmed = confirm(
-      "Are you sure you want to delete this character? This action cannot be undone.",
-    );
+    const confirmed = confirm(t.account.errors.confirmDelete);
 
     if (!confirmed) return;
 
@@ -453,7 +453,7 @@ export default function AccountPanel() {
   // Account Action
   async function handleCharacterAction() {
     if (!selectedCharId) {
-      toast.error("Please select a character.");
+      toast.error(t.account.errors.selectCharacter);
       return;
     }
 
@@ -464,7 +464,7 @@ export default function AccountPanel() {
 
       if (selectedOption === "changeSchool") {
         if (selectedSchool === null) {
-          toast.error("Please select a school.");
+          toast.error(t.account.errors.selectSchool);
           return;
         }
 
@@ -490,7 +490,7 @@ export default function AccountPanel() {
 
       if (selectedOption === "changeClass") {
         if (!selectedClass) {
-          toast.error("Please select a class.");
+          toast.error(t.account.errors.selectClass);
           return;
         }
 
@@ -509,7 +509,7 @@ export default function AccountPanel() {
   // Top Up
   async function handleRedeemTopup() {
     if (!topupCode || !topupPin) {
-      toast.error("Code and PIN are required.");
+      toast.error(t.account.errors.codeAndPinRequired);
       return;
     }
 
@@ -556,8 +556,8 @@ export default function AccountPanel() {
     <div className="container mx-auto space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Account Panel</CardTitle>
-          <CardDescription>Manage your account here</CardDescription>
+          <CardTitle>{t.account.title}</CardTitle>
+          <CardDescription>{t.account.subtitle}</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -573,17 +573,15 @@ export default function AccountPanel() {
               <Table>
                 <TableBody>
                   <TableRow>
-                    <TableCell className="font-medium">User ID</TableCell>
+                    <TableCell className="font-medium">{t.account.userId}</TableCell>
                     <TableCell>{account.userid}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-medium">Email</TableCell>
+                    <TableCell className="font-medium">{t.account.email}</TableCell>
                     <TableCell>{account.email}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-medium">
-                      Character Slots Remaining
-                    </TableCell>
+                    <TableCell className="font-medium">{t.account.characterSlots}</TableCell>
                     <TableCell>{account.chaRemain}</TableCell>
                   </TableRow>
                   <TableRow>
@@ -591,24 +589,20 @@ export default function AccountPanel() {
                     <TableCell>{account.epoint}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-medium">V-Points</TableCell>
+                    <TableCell className="font-medium">{t.account.vPoints}</TableCell>
                     <TableCell>{account.vpoint}</TableCell>
                   </TableRow>
                   {account.type > 10 && (
                     <TableRow>
-                      <TableCell className="font-medium">
-                        Account Type
-                      </TableCell>
+                      <TableCell className="font-medium">{t.account.accountType}</TableCell>
                       <TableCell>{account.type}</TableCell>
                     </TableRow>
                   )}
 
                   <TableRow>
-                    <TableCell className="font-medium">
-                      Account Status
-                    </TableCell>
+                    <TableCell className="font-medium">{t.account.accountStatus}</TableCell>
                     <TableCell>
-                      {account.blocked ? "BLOCKED" : "ACTIVE"}
+                      {account.blocked ? t.account.statusBlocked : t.account.statusActive}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -622,7 +616,7 @@ export default function AccountPanel() {
                       setOpenModal("password");
                     }}
                   >
-                    Change Password
+                    {t.account.changePassword}
                   </Button>
                 )}
 
@@ -634,7 +628,7 @@ export default function AccountPanel() {
                       setOpenModal("email");
                     }}
                   >
-                    Change Email
+                    {t.account.changeEmail}
                   </Button>
                 )}
 
@@ -646,7 +640,7 @@ export default function AccountPanel() {
                       setOpenModal("pincode");
                     }}
                   >
-                    Change Pincode
+                    {t.account.changePin}
                   </Button>
                 )}
               </div>
@@ -657,17 +651,17 @@ export default function AccountPanel() {
             <>
               {characters.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No characters found.
+                  {t.account.noCharacters}
                 </p>
               ) : (
                 <Table>
                   <thead>
                     <tr className="border-b text-sm text-muted-foreground">
-                      <th className="text-left py-2">Name</th>
-                      <th className="text-left py-2">Level (Reborn)</th>
-                      <th className="text-left py-2">School</th>
-                      <th className="text-left py-2">Gold</th>
-                      <th className="text-left py-2">Status</th>
+                      <th className="text-left py-2">{t.account.characterName}</th>
+                      <th className="text-left py-2">{t.account.level} ({t.account.reborn})</th>
+                      <th className="text-left py-2">{t.account.school}</th>
+                      <th className="text-left py-2">{t.account.gold}</th>
+                      <th className="text-left py-2">{t.account.status}</th>
                     </tr>
                   </thead>
                   <TableBody>
@@ -698,7 +692,7 @@ export default function AccountPanel() {
                                 : "text-muted-foreground"
                             }`}
                           >
-                            {char.isOnline ? "ONLINE" : "OFFLINE"}
+                            {char.isOnline ? t.account.statusOnline : t.account.statusOffline}
                           </span>
                         </TableCell>
 
@@ -710,7 +704,7 @@ export default function AccountPanel() {
                               disabled={deletingId === char.id}
                               onClick={() => handleDeleteCharacter(char.id)}
                             >
-                              {deletingId === char.id ? "Deleting..." : "Delete"}
+                              {deletingId === char.id ? t.common.deleting : t.account.deleteCharacter}
                             </Button>
                           </TableCell>
                         )}
@@ -729,14 +723,14 @@ export default function AccountPanel() {
               <div className="flex justify-center py-6">
                 <div className="w-full max-w-md space-y-6">
                   <div className="space-y-2 text-center">
-                    <h3 className="text-lg font-semibold">Redeem Top Up</h3>
+                    <h3 className="text-lg font-semibold">{t.account.topUpRedeemTitle}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Enter your top up code and PIN.
+                      {t.account.topUpRedeemDesc}
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Top Up Code</Label>
+                    <Label>{t.account.topUpCode}</Label>
                     <Input
                       value={topupCode}
                       onChange={(e) => setTopupCode(e.target.value)}
@@ -744,7 +738,7 @@ export default function AccountPanel() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>PIN</Label>
+                    <Label>{t.account.pin}</Label>
                     <Input
                       value={topupPin}
                       onChange={(e) => setTopupPin(e.target.value)}
@@ -756,7 +750,7 @@ export default function AccountPanel() {
                     disabled={loadingRedeem}
                     className="w-full"
                   >
-                    {loadingRedeem ? "Processing..." : "Redeem"}
+                    {loadingRedeem ? t.common.processing : t.account.redeem}
                   </Button>
                 </div>
               </div>
@@ -769,32 +763,32 @@ export default function AccountPanel() {
             <div className="flex justify-center py-6">
               <div className="w-full max-w-3xl space-y-6">
                 <div className="space-y-2 text-center">
-                  <h3 className="text-lg font-semibold">Top Up History</h3>
+                  <h3 className="text-lg font-semibold">{t.account.topUpHistoryTitle}</h3>
                   <p className="text-sm text-muted-foreground">
-                    View your redeemed top up transactions.
+                    {t.account.topUpHistoryDesc}
                   </p>
                 </div>
 
                 <div className="rounded-md border bg-muted/40 p-4 text-sm flex justify-between items-center">
-                  <span className="text-muted-foreground">Total Redeemed</span>
+                  <span className="text-muted-foreground">{t.account.totalRedeemed}</span>
                   <span className="font-semibold text-foreground">
                     {totalRedeemed.toLocaleString()} EP
                   </span>
                 </div>
 
                 {loadingHistory ? (
-                  <p className="text-sm text-muted-foreground">Loading...</p>
+                  <p className="text-sm text-muted-foreground">{t.common.loading}</p>
                 ) : topupHistory.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No top up history yet.
+                    {t.account.noHistory}
                   </p>
                 ) : (
                   <Table>
                     <thead>
                       <tr className="border-b text-sm text-muted-foreground">
-                        <th className="text-left py-2">Code</th>
-                        <th className="text-left py-2">Value</th>
-                        <th className="text-left py-2">Date</th>
+                        <th className="text-left py-2">{t.account.code}</th>
+                        <th className="text-left py-2">{t.account.value}</th>
+                        <th className="text-left py-2">{t.account.date}</th>
                       </tr>
                     </thead>
                     <TableBody>
@@ -823,26 +817,26 @@ export default function AccountPanel() {
             <div className="w-full max-w-md space-y-6">
               <div className="space-y-2 text-center">
                 <h3 className="text-lg font-semibold">
-                  {selectedOption === "changeSchool" && "Change School"}
-                  {selectedOption === "resetStats" && "Reset Stats"}
-                  {selectedOption === "reborn" && "Reborn Character"}
-                  {selectedOption === "changeClass" && "Change Class"}
+                  {selectedOption === "changeSchool" && t.account.changeSchool}
+                  {selectedOption === "resetStats" && t.account.resetStats}
+                  {selectedOption === "reborn" && t.account.rebornTitle}
+                  {selectedOption === "changeClass" && t.account.changeClass}
                 </h3>
 
                 <p className="text-sm text-muted-foreground">
-                  Select a character and confirm the action.
+                  {t.account.selectCharacterHint}
                 </p>
               </div>
 
               {characters.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center">
-                  No characters available.
+                  {t.account.noCharactersAvailable}
                 </p>
               ) : (
                 <>
                   {/* Character Dropdown */}
                   <div className="space-y-2">
-                    <Label>Character</Label>
+                    <Label>{t.account.characterLabel}</Label>
                     <ComboboxDemo
                       options={characters.map((char) => ({
                         label: `${char.name} • Lv ${char.level}${
@@ -858,7 +852,7 @@ export default function AccountPanel() {
                   {selectedOption === "changeSchool" && (
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>School</Label>
+                        <Label>{t.account.schoolLabel}</Label>
 
                         <ComboboxDemo
                           options={schoolOptions.map((s) => ({
@@ -873,7 +867,7 @@ export default function AccountPanel() {
                       {/* Info Section */}
                       <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
                         <p>
-                          Fee:{" "}
+                          {t.account.fee}{" "}
                           <span className="font-semibold">
                             {publicConfig?.gameoptions?.changeSchool?.fee?.toLocaleString()}{" "}
                             {publicConfig?.gameoptions?.changeSchool?.currency?.toUpperCase()}
@@ -881,9 +875,7 @@ export default function AccountPanel() {
                         </p>
 
                         <p className="text-muted-foreground">
-                          Changing school to the selected option will consume
-                          the required fee. This action cannot be undone once
-                          confirmed.
+                          {t.account.changeSchoolWarning}
                         </p>
                       </div>
                     </div>
@@ -892,7 +884,7 @@ export default function AccountPanel() {
                   {selectedOption === "changeClass" && (
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Class</Label>
+                        <Label>{t.account.classLabel}</Label>
                         <ComboboxDemo
                           options={enabledClassOptions}
                           value={selectedClass}
@@ -902,7 +894,7 @@ export default function AccountPanel() {
 
                       <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
                         <p>
-                          Fee:{" "}
+                          {t.account.fee}{" "}
                           <span className="font-semibold">
                             {publicConfig?.gameoptions?.changeClass?.fee?.toLocaleString()}{" "}
                             {publicConfig?.gameoptions?.changeClass?.currency?.toUpperCase()}
@@ -910,8 +902,7 @@ export default function AccountPanel() {
                         </p>
 
                         <p className="text-muted-foreground">
-                          Changing class will permanently modify your character.
-                          This action cannot be undone once confirmed.
+                          {t.account.changeClassWarning}
                         </p>
                       </div>
                     </div>
@@ -920,7 +911,7 @@ export default function AccountPanel() {
                   {selectedOption === "resetStats" && (
                     <div className="rounded-md border bg-muted/40 p-4 text-sm space-y-1 text-center">
                       <p>
-                        Resetting stats requires{" "}
+                        {t.account.resetStatsRequires}{" "}
                         <span className="font-semibold text-foreground">
                           {publicConfig?.gameoptions?.resetStats?.fee?.toLocaleString()}{" "}
                           {publicConfig?.gameoptions?.resetStats?.currency?.toUpperCase()}
@@ -929,8 +920,7 @@ export default function AccountPanel() {
                       </p>
 
                       <p className="text-muted-foreground">
-                        This will reset all allocated stat points. This action
-                        cannot be undone.
+                        {t.account.resetStatsWarning}
                       </p>
                     </div>
                   )}
@@ -940,7 +930,7 @@ export default function AccountPanel() {
                       {rebornPreview ? (
                         <>
                           <p>
-                            Reborn requires{" "}
+                            {t.account.rebornRequires}{" "}
                             <span className="font-semibold text-foreground">
                               {rebornPreview.requiredFee?.toLocaleString()}{" "}
                               {rebornPreview.currency?.toUpperCase()}
@@ -949,36 +939,36 @@ export default function AccountPanel() {
                           </p>
 
                           <p>
-                            Required Level:{" "}
+                            {t.account.requiredLevelLabel}{" "}
                             <span className="font-semibold text-foreground">
                               {rebornPreview.requiredLevel}
                             </span>
                           </p>
 
                           <p>
-                            Current Reborn:{" "}
+                            {t.account.currentRebornLabel}{" "}
                             <span className="font-semibold text-foreground">
                               {rebornPreview.currentReborn}
                             </span>
                           </p>
 
                           <p>
-                            After Reborn:{" "}
+                            {t.account.afterRebornLabel}{" "}
                             <span className="font-semibold text-foreground">
                               {rebornPreview.nextReborn}
                             </span>
                           </p>
 
                           <p className="text-muted-foreground">
-                            You will gain{" "}
+                            {t.account.gainStats}{" "}
                             <span className="font-semibold text-foreground">
                               {rebornPreview.statRewardForNext}
                             </span>{" "}
-                            bonus stats.
+                            {t.account.gainStatsSuffix}
                           </p>
 
                           <p className="text-muted-foreground">
-                            Total bonus stats after rebirth:{" "}
+                            {t.account.totalBonusStats}{" "}
                             <span className="font-semibold text-foreground">
                               {rebornPreview.totalStatAfter}
                             </span>
@@ -988,23 +978,23 @@ export default function AccountPanel() {
                           {!rebornPreview.canReborn && (
                             <p className="text-destructive font-medium pt-2">
                               {rebornPreview.reason === "REBORN_MAX_REACHED"
-                                ? "Maximum reborn reached."
+                                ? t.account.rebornMaxReached
                                 : rebornPreview.reason ===
                                     "LEVEL_REQUIREMENT_NOT_MET"
-                                  ? "You have not reached the required level yet."
-                                  : "You cannot reborn at this time."}
+                                  ? t.account.levelNotMet
+                                  : t.account.cannotReborn}
                             </p>
                           )}
 
                           {rebornPreview.canReborn && (
                             <p className="text-green-600 font-medium pt-2">
-                              You are eligible for rebirth.
+                              {t.account.eligibleReborn}
                             </p>
                           )}
                         </>
                       ) : (
                         <p className="text-muted-foreground">
-                          Loading reborn data...
+                          {t.account.loadingReborn}
                         </p>
                       )}
                     </div>
@@ -1023,7 +1013,7 @@ export default function AccountPanel() {
                       selectedOption === "reborn" ? "destructive" : "default"
                     }
                   >
-                    {loadingAction ? "Processing..." : "Confirm"}
+                    {loadingAction ? t.common.processing : t.common.confirm}
                   </Button>
                 </>
               )}
@@ -1032,7 +1022,7 @@ export default function AccountPanel() {
         )}
 
         <CardFooter className="flex justify-center text-sm text-muted-foreground">
-          Your account security is your responsibility.
+          {t.account.securityNote}
         </CardFooter>
       </Card>
 
@@ -1042,52 +1032,52 @@ export default function AccountPanel() {
           <DialogHeader>
             <DialogTitle>
               {openModal === "password"
-                ? "Change Password"
+                ? t.account.changePassword
                 : openModal === "email"
-                  ? "Change Email"
-                  : "Change Pincode"}
+                  ? t.account.changeEmail
+                  : t.account.changePin}
             </DialogTitle>
           </DialogHeader>
 
           {/* PASSWORD FORM */}
           {openModal === "password" && (
             <div className="space-y-3">
-              <Label>Old Password</Label>
+              <Label>{t.account.oldPassword}</Label>
               <Input
                 type="password"
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
               />
 
-              <Label>Confirm Old Password</Label>
+              <Label>{t.account.confirmOldPassword}</Label>
               <Input
                 type="password"
                 value={confirmOldPassword}
                 onChange={(e) => setConfirmOldPassword(e.target.value)}
               />
 
-              <Label>Pincode</Label>
+              <Label>{t.account.pincode}</Label>
               <Input
                 type="password"
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value)}
               />
 
-              <Label>Confirm Pincode</Label>
+              <Label>{t.account.confirmPincode}</Label>
               <Input
                 type="password"
                 value={confirmPincode}
                 onChange={(e) => setConfirmPincode(e.target.value)}
               />
 
-              <Label>New Password</Label>
+              <Label>{t.account.newPassword}</Label>
               <Input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
 
-              <Label>Confirm New Password</Label>
+              <Label>{t.account.confirmNewPassword}</Label>
               <Input
                 type="password"
                 value={confirmNewPassword}
@@ -1099,7 +1089,7 @@ export default function AccountPanel() {
                   onClick={handlePasswordChange}
                   disabled={loadingPassword}
                 >
-                  {loadingPassword ? "Saving..." : "Confirm"}
+                  {loadingPassword ? t.common.saving : t.common.confirm}
                 </Button>
               </DialogFooter>
             </div>
@@ -1108,21 +1098,21 @@ export default function AccountPanel() {
           {/* EMAIL FORM */}
           {openModal === "email" && (
             <div className="space-y-3">
-              <Label>New Email</Label>
+              <Label>{t.account.newEmail}</Label>
               <Input
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
               />
 
-              <Label>Confirm Email</Label>
+              <Label>{t.account.confirmEmail}</Label>
               <Input
                 type="email"
                 value={confirmEmail}
                 onChange={(e) => setConfirmEmail(e.target.value)}
               />
 
-              <Label>Pincode</Label>
+              <Label>{t.account.pincode}</Label>
               <Input
                 type="password"
                 value={pincode}
@@ -1131,7 +1121,7 @@ export default function AccountPanel() {
 
               <DialogFooter>
                 <Button onClick={handleEmailChange} disabled={loadingEmail}>
-                  {loadingEmail ? "Saving..." : "Confirm"}
+                  {loadingEmail ? t.common.saving : t.common.confirm}
                 </Button>
               </DialogFooter>
             </div>
@@ -1140,42 +1130,42 @@ export default function AccountPanel() {
           {/* PINCODE FORM */}
           {openModal === "pincode" && (
             <div className="space-y-3">
-              <Label>Old Pincode</Label>
+              <Label>{t.account.oldPincode}</Label>
               <Input
                 type="password"
                 value={oldPin}
                 onChange={(e) => setOldPin(e.target.value)}
               />
 
-              <Label>Confirm Old Pincode</Label>
+              <Label>{t.account.confirmOldPincode}</Label>
               <Input
                 type="password"
                 value={confirmOldPin}
                 onChange={(e) => setConfirmOldPin(e.target.value)}
               />
 
-              <Label>New Pincode</Label>
+              <Label>{t.account.newPincode}</Label>
               <Input
                 type="password"
                 value={newPin}
                 onChange={(e) => setNewPin(e.target.value)}
               />
 
-              <Label>Confirm New Pincode</Label>
+              <Label>{t.account.confirmNewPincode}</Label>
               <Input
                 type="password"
                 value={confirmNewPin}
                 onChange={(e) => setConfirmNewPin(e.target.value)}
               />
 
-              <Label>Email</Label>
+              <Label>{t.account.emailLabel}</Label>
               <Input
                 type="email"
                 value={emailForPin}
                 onChange={(e) => setEmailForPin(e.target.value)}
               />
 
-              <Label>Confirm Email</Label>
+              <Label>{t.account.confirmEmail}</Label>
               <Input
                 type="email"
                 value={confirmEmailForPin}
@@ -1184,7 +1174,7 @@ export default function AccountPanel() {
 
               <DialogFooter>
                 <Button onClick={handlePincodeChange} disabled={loadingPin}>
-                  {loadingPin ? "Saving..." : "Confirm"}
+                  {loadingPin ? t.common.saving : t.common.confirm}
                 </Button>
               </DialogFooter>
             </div>

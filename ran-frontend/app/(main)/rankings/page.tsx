@@ -31,6 +31,7 @@ import {
   formatKDR,
 } from "@/lib/data/ranking.data";
 import { usePublicConfig } from "@/context/PublicConfigContext";
+import { useT } from "@/context/LanguageContext";
 
 /* =====================================================
    Component
@@ -42,6 +43,7 @@ const RankingPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   const { config: publicConfig } = usePublicConfig();
+  const t = useT();
 
   const enabledRankingCategories = rankingCategories.filter((cat) => {
     // Always allow these base categories
@@ -91,8 +93,8 @@ const RankingPage = () => {
     <div className="container mx-auto gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>Leaderboards</CardTitle>
-          <CardDescription>Overall top performing players</CardDescription>
+          <CardTitle>{t.rankings.title}</CardTitle>
+          <CardDescription>{t.rankings.subtitle}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex justify-end mb-4">
@@ -104,28 +106,28 @@ const RankingPage = () => {
           </div>
 
           {loading ? (
-            <p className="text-center py-4">Loading...</p>
+            <p className="text-center py-4">{t.rankings.loading}</p>
           ) : error ? (
             <p className="text-center text-red-500">{error}</p>
           ) : (
             <Table>
-              <TableCaption className="text-xs">Ranking cached every 30 minutes</TableCaption>
+              <TableCaption className="text-xs">{t.rankings.cachedNotice}</TableCaption>
 
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-center">Rank</TableHead>
-                  <TableHead className="text-center">Player</TableHead>
-                  <TableHead className="text-center">Level</TableHead>
-                  <TableHead className="text-center">Class</TableHead>
-                  <TableHead className="text-center">School</TableHead>
-                  <TableHead className="text-center">Guild</TableHead>
+                  <TableHead className="text-center">{t.rankings.columns.rank}</TableHead>
+                  <TableHead className="text-center">{t.rankings.columns.player}</TableHead>
+                  <TableHead className="text-center">{t.rankings.columns.level}</TableHead>
+                  <TableHead className="text-center">{t.rankings.columns.class}</TableHead>
+                  <TableHead className="text-center">{t.rankings.columns.school}</TableHead>
+                  <TableHead className="text-center">{t.rankings.columns.guild}</TableHead>
 
                   {selectedCategory === "all" && (
-                    <TableHead className="text-center">K / D / R</TableHead>
+                    <TableHead className="text-center">{t.rankings.columns.kdr}</TableHead>
                   )}
 
                   {selectedCategory === "rich" && (
-                    <TableHead className="text-center">Money</TableHead>
+                    <TableHead className="text-center">{t.rankings.columns.money}</TableHead>
                   )}
                 </TableRow>
               </TableHeader>

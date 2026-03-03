@@ -9,6 +9,7 @@ import {
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { PublicConfigProvider } from "@/context/PublicConfigContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { ModalProvider } from "@/context/ModalContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -55,9 +56,11 @@ export default function RootLayout({
       >
         <AuthProvider>
           <PublicConfigProvider>
-            <TooltipProvider>
-              <ModalProvider>{children}</ModalProvider>
-            </TooltipProvider>
+            <LanguageProvider>
+              <TooltipProvider>
+                <ModalProvider>{children}</ModalProvider>
+              </TooltipProvider>
+            </LanguageProvider>
           </PublicConfigProvider>
         </AuthProvider>
       </body>

@@ -7,12 +7,15 @@ import MaxWidthWrapper from "./maxwidthwrapper";
 import { Button } from "./ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/context/PublicConfigContext";
+import { useLanguage, useT } from "@/context/LanguageContext";
 import AccountSection from "./AccountSection";
 import LoginDialog from "@/components/auth/LoginDialog";
 
 const NavBar = () => {
   const { user, loading, logout } = useAuth();
   const { config } = usePublicConfig();
+  const { lang, setLang } = useLanguage();
+  const t = useT();
 
   const navLinkClass =
     "nav-link relative font-medium text-gray-200 hover:text-white " +
@@ -46,34 +49,31 @@ const NavBar = () => {
             {/* Nav links */}
             <nav className="hidden md:flex space-x-6 absolute left-1/2 -translate-x-1/2">
               {/* Public Links */}
-              <Link href="/" className={navLinkClass}>
-                News
-              </Link>
-
-              <Link href="/download" className={navLinkClass}>
-                Download
-              </Link>
-
-              <Link href="/rankings" className={navLinkClass}>
-                Rankings
-              </Link>
+              <Link href="/" className={navLinkClass}>{t.nav.news}</Link>
+              <Link href="/download" className={navLinkClass}>{t.nav.download}</Link>
+              <Link href="/rankings" className={navLinkClass}>{t.nav.rankings}</Link>
 
               {/* Auth Only Links */}
               {!loading && user && config?.shop?.enabled !== false && (
-                <Link href="/itemshop" className={navLinkClass}>
-                  Item Shop
-                </Link>
+                <Link href="/itemshop" className={navLinkClass}>{t.nav.itemShop}</Link>
               )}
-
               {!loading && user && config?.features?.ticketSystem !== false && (
-                <Link href="/tickets" className={navLinkClass}>
-                  Ticket
-                </Link>
+                <Link href="/tickets" className={navLinkClass}>{t.nav.tickets}</Link>
               )}
             </nav>
 
             {/* Auth Section */}
-            <div className="space-x-4">
+            <div className="flex items-center gap-2">
+              {/* Language toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLang(lang === "en" ? "th" : "en")}
+                className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2"
+              >
+                {lang === "en" ? "TH" : "EN"}
+              </Button>
+
               {loading ? null : !user ? (
                 <>
                   {/* <LoginDialog />
@@ -88,11 +88,7 @@ const NavBar = () => {
                 </>
               ) : (
                 <div className="flex items-center gap-4">
-                  {/* FIX: force vertical centering */}
-                  <Link
-                    href="/account"
-                    className="hidden lg:flex items-center h-16"
-                  >
+                  <Link href="/account" className="hidden lg:flex items-center h-16">
                     <AccountSection />
                   </Link>
                   <Button
@@ -101,7 +97,7 @@ const NavBar = () => {
                     onClick={logout}
                     className="uppercase border-white/20 hover:bg-white/10 hover:text-white"
                   >
-                    Logout
+                    {t.nav.logout}
                   </Button>
                 </div>
               )}

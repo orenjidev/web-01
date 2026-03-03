@@ -21,12 +21,14 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/context/PublicConfigContext";
 import { toast } from "sonner";
+import { useT } from "@/context/LanguageContext";
 
 export default function NewTicketPage() {
   const router = useRouter();
 
   const { user, loading: authLoading } = useAuth();
   const { config } = usePublicConfig();
+  const t = useT();
   const isAuthed = Boolean(user);
   const shown = useRef(false);
 
@@ -81,7 +83,7 @@ export default function NewTicketPage() {
   }
 
   if (authLoading) {
-    return <p className="max-w-4xl mx-auto py-10">Loading...</p>;
+    return <p className="max-w-4xl mx-auto py-10">{t.common.loading}</p>;
   }
 
   if (!isAuthed) {
@@ -90,8 +92,8 @@ export default function NewTicketPage() {
         <Card>
           <CardContent className="flex flex-col items-center text-center py-12 space-y-3">
             <Ban size={64} />
-            <h1 className="text-2xl font-semibold">Forbidden Access</h1>
-            <p className="text-muted-foreground">Login first to see content.</p>
+            <h1 className="text-2xl font-semibold">{t.notFound.title}</h1>
+            <p className="text-muted-foreground">{t.notFound.message}</p>
           </CardContent>
         </Card>
       </div>
@@ -104,8 +106,8 @@ export default function NewTicketPage() {
         <Card>
           <CardContent className="flex flex-col items-center text-center py-12 space-y-3">
             <Ban size={64} />
-            <h1 className="text-2xl font-semibold">Feature Unavailable</h1>
-            <p className="text-muted-foreground">The support ticket system is currently disabled.</p>
+            <h1 className="text-2xl font-semibold">{t.common.featureUnavailable}</h1>
+            <p className="text-muted-foreground">{t.common.featureUnavailableDesc}</p>
           </CardContent>
         </Card>
       </div>
@@ -120,16 +122,16 @@ export default function NewTicketPage() {
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
       >
         <ArrowLeft size={18} />
-        Back
+        {t.tickets.back}
       </button>
 
       {/* Header */}
 
       <Card>
         <CardHeader>
-          <CardTitle>Create Ticket</CardTitle>
+          <CardTitle>{t.tickets.newTicket}</CardTitle>
           <CardDescription>
-            Provide detailed information so we can assist you faster.
+            {t.tickets.newTicketDesc}
           </CardDescription>
         </CardHeader>
 
@@ -138,7 +140,7 @@ export default function NewTicketPage() {
             {/* Game ID */}
             <div className="grid gap-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Game ID
+                {t.tickets.gameId}
               </Label>
               <Input
                 value={user?.userid ?? ""}
@@ -150,10 +152,10 @@ export default function NewTicketPage() {
             {/* Subject */}
             <div className="grid gap-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Subject
+                {t.tickets.subject}
               </Label>
               <Input
-                placeholder="Brief summary of your issue"
+                placeholder={t.tickets.subjectPlaceholder}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 required
@@ -164,7 +166,7 @@ export default function NewTicketPage() {
             {/* Category */}
             <div className="grid gap-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Category
+                {t.tickets.category}
               </Label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -174,7 +176,7 @@ export default function NewTicketPage() {
                 }
                 required
               >
-                <option value="">Select Category</option>
+                <option value="">{t.tickets.selectCategory}</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
@@ -186,12 +188,12 @@ export default function NewTicketPage() {
             {/* Description */}
             <div className="grid gap-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Description
+                {t.tickets.description}
               </Label>
               <textarea
                 className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                 rows={6}
-                placeholder="Describe your issue in detail..."
+                placeholder={t.tickets.descriptionPlaceholder}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 required
@@ -202,7 +204,7 @@ export default function NewTicketPage() {
             <div className="grid gap-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Paperclip size={12} />
-                Attachments (Optional)
+                {t.tickets.attachments}
               </Label>
 
               <div className="border border-dashed rounded-lg p-5 text-center bg-muted/20">
@@ -221,7 +223,7 @@ export default function NewTicketPage() {
                   htmlFor="file-upload"
                   className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition"
                 >
-                  Click to upload or drag files here
+                  {t.tickets.uploadHint}
                 </label>
 
                 {files.length > 0 && (
@@ -245,7 +247,7 @@ export default function NewTicketPage() {
             {/* Submit */}
             <div className="flex justify-end pt-1">
               <Button type="submit" disabled={submitting} className="h-9 gap-2">
-                {submitting ? "Submitting..." : "Submit Ticket"}
+                {submitting ? t.common.submitting : t.tickets.submit}
               </Button>
             </div>
           </form>

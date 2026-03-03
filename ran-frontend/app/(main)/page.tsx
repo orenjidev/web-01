@@ -22,20 +22,16 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { getNews, getNewsCategories, NewsItem } from "@/lib/data/news.data";
 import { usePublicConfig } from "@/context/PublicConfigContext";
+import { useT } from "@/context/LanguageContext";
 
-// category → label + style
-function getCategoryStyle(type: string) {
+// category → className only (labels come from translations)
+function getCategoryClass(type: string): string {
   switch (type) {
-    case "announcement":
-      return { label: "Announcement", className: "bg-blue-100 text-blue-800" };
-    case "patch":
-      return { label: "Patch", className: "bg-green-100 text-green-800" };
-    case "event":
-      return { label: "Event", className: "bg-purple-100 text-purple-800" };
-    case "notice":
-      return { label: "Notice", className: "bg-yellow-100 text-yellow-800" };
-    default:
-      return { label: "Other", className: "bg-gray-100 text-gray-800" };
+    case "announcement": return "bg-blue-100 text-blue-800";
+    case "patch":        return "bg-green-100 text-green-800";
+    case "event":        return "bg-purple-100 text-purple-800";
+    case "notice":       return "bg-yellow-100 text-yellow-800";
+    default:             return "bg-gray-100 text-gray-800";
   }
 }
 
@@ -45,8 +41,22 @@ export default function HomePage() {
   const [selected, setSelected] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { config: publicConfig } = usePublicConfig();
+  const t = useT();
 
   const filters = ["ALL", "ANNOUNCEMENT", "PATCH", "EVENT", "NOTICE"];
+  const filterLabels: Record<string, string> = {
+    ALL: t.home.categories.all,
+    ANNOUNCEMENT: t.home.categories.announcement,
+    PATCH: t.home.categories.patch,
+    EVENT: t.home.categories.event,
+    NOTICE: t.home.categories.notice,
+  };
+  const categoryLabels: Record<string, string> = {
+    announcement: t.home.categories.announcement,
+    patch: t.home.categories.patch,
+    event: t.home.categories.event,
+    notice: t.home.categories.notice,
+  };
   const itemsPerPage = publicConfig?.gameoptions?.uihelper?.max_topnews ?? 5;
 
   // Load dummy data
@@ -103,11 +113,8 @@ export default function HomePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Latest News</CardTitle>
-          <CardDescription>
-            Stay up to date with the latest updates, events, and important
-            notices from the game team.
-          </CardDescription>
+          <CardTitle>{t.home.latestNews}</CardTitle>
+          <CardDescription>{t.home.subtitle}</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Filters */}
@@ -116,13 +123,10 @@ export default function HomePage() {
               <Button
                 key={filter}
                 variant={selected === filter ? "default" : "outline"}
-                onClick={() => {
-                  setSelected(filter);
-                  setCurrentPage(1);
-                }}
+                onClick={() => { setSelected(filter); setCurrentPage(1); }}
                 className="text-xs"
               >
-                {filter}
+                {filterLabels[filter] ?? filter}
               </Button>
             ))}
           </div>
@@ -130,33 +134,30 @@ export default function HomePage() {
           {/* News List */}
           {loading ? (
             <p className="text-center text-muted-foreground py-6 text-sm">
-              Loading news…
+              {t.home.loadingNews}
             </p>
           ) : (
             <div className="space-y-4">
               {paginatedNews.length > 0 ? (
-                paginatedNews.map((item) => {
-                  const category = getCategoryStyle(item.category);
-                  return (
-                    <Link key={item.id} href={`/news/${item.id}`}>
-                      <div className="p-4 border bg-gray-50 hover:bg-accent transition mb-2">
-                        <div className="flex items-center justify-between">
-                          <h2 className="font-semibold">{item.title}</h2>
-                          <Badge className={category.className}>
-                            {category.label}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          By {item.author} •{" "}
-                          {new Date(item.published).toLocaleString()}
-                        </p>
+                paginatedNews.map((item) => (
+                  <Link key={item.id} href={`/news/${item.id}`}>
+                    <div className="p-4 border bg-gray-50 hover:bg-accent transition mb-2">
+                      <div className="flex items-center justify-between">
+                        <h2 className="font-semibold">{item.title}</h2>
+                        <Badge className={getCategoryClass(item.category)}>
+                          {categoryLabels[item.category] ?? t.home.categories.other}
+                        </Badge>
                       </div>
-                    </Link>
-                  );
-                })
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t.home.byAuthor} {item.author} •{" "}
+                        {new Date(item.published).toLocaleString()}
+                      </p>
+                    </div>
+                  </Link>
+                ))
               ) : (
                 <p className="text-center text-muted-foreground py-6 text-sm">
-                  No news available for this category.
+                  {t.home.noNews}
                 </p>
               )}
             </div>

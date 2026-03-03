@@ -7,6 +7,7 @@ import { UserPlus, User, Mail, Lock, Hash } from "lucide-react";
 
 import { registerUser, type RegisterPayload, type RegisterResponse } from "@/lib/auth";
 import { useModal } from "@/context/ModalContext";
+import { useT } from "@/context/LanguageContext";
 
 import {
   Dialog,
@@ -20,6 +21,7 @@ import { Label } from "@/components/ui/label";
 
 export default function RegisterDialog() {
   const { modal, openModal, closeModal } = useModal();
+  const t = useT();
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const [captchaToken, setCaptchaToken] = useState("");
@@ -53,13 +55,13 @@ export default function RegisterDialog() {
 
   const validateForm = (f: typeof form): string => {
     if (!/^[a-zA-Z0-9_.-]{4,12}$/.test(f.username))
-      return "Username must be 4–12 characters (letters, numbers, _, ., -).";
+      return t.auth.errors.usernameFormat;
     if (f.password.length < 4 || f.password.length > 11)
-      return "Password must be 4–11 characters.";
-    if (f.password !== f.confirm_password) return "Passwords do not match.";
+      return t.auth.errors.passwordLength;
+    if (f.password !== f.confirm_password) return t.auth.errors.passwordMismatch;
     if (f.pincode.length < 4 || f.pincode.length > 11)
-      return "Pincode must be 4–11 characters.";
-    if (f.pincode !== f.confirm_pincode) return "Pincodes do not match.";
+      return t.auth.errors.pincodeLength;
+    if (f.pincode !== f.confirm_pincode) return t.auth.errors.pincodeMismatch;
     return "";
   };
 
@@ -70,7 +72,7 @@ export default function RegisterDialog() {
     if (err) { toast.error(err); return; }
 
     if (!captchaToken) {
-      toast.error("Please complete the reCAPTCHA.");
+      toast.error(t.auth.errors.captchaRequired);
       return;
     }
 
@@ -111,9 +113,9 @@ export default function RegisterDialog() {
               <UserPlus className="h-4 w-4 text-emerald-400" />
             </div>
             <div>
-              <h3 className="font-bold text-sm leading-tight">Create Account</h3>
+              <h3 className="font-bold text-sm leading-tight">{t.auth.registerTitle}</h3>
               <p className="text-xs text-muted-foreground">
-                Sign up and start your adventure
+                {t.auth.registerSubtitle}
               </p>
             </div>
           </div>
@@ -125,14 +127,14 @@ export default function RegisterDialog() {
             {/* Username */}
             <div className="grid gap-1.5">
               <Label htmlFor="reg-username" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Username
+                {t.auth.username}
               </Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                 <Input
                   id="reg-username"
                   name="username"
-                  placeholder="4–12 characters"
+                  placeholder={t.auth.usernameHint}
                   required
                   value={form.username}
                   onChange={handleChange}
@@ -144,7 +146,7 @@ export default function RegisterDialog() {
             {/* Email */}
             <div className="grid gap-1.5">
               <Label htmlFor="reg-email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Email
+                {t.account.email}
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -165,7 +167,7 @@ export default function RegisterDialog() {
             <div className="grid grid-cols-2 gap-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="reg-password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Password
+                  {t.auth.password}
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -183,7 +185,7 @@ export default function RegisterDialog() {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="reg-confirm-password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Confirm
+                  {t.auth.confirmLabel}
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -205,7 +207,7 @@ export default function RegisterDialog() {
             <div className="grid grid-cols-2 gap-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="reg-pincode" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Pincode
+                  {t.account.pincode}
                 </Label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -213,7 +215,7 @@ export default function RegisterDialog() {
                     id="reg-pincode"
                     name="pincode"
                     type="password"
-                    placeholder="4–11 chars"
+                    placeholder={t.auth.pincodeHint}
                     required
                     value={form.pincode}
                     onChange={handleChange}
@@ -223,7 +225,7 @@ export default function RegisterDialog() {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="reg-confirm-pincode" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Confirm
+                  {t.auth.confirmLabel}
                 </Label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -231,7 +233,7 @@ export default function RegisterDialog() {
                     id="reg-confirm-pincode"
                     name="confirm_pincode"
                     type="password"
-                    placeholder="4–11 chars"
+                    placeholder={t.auth.pincodeHint}
                     required
                     value={form.confirm_pincode}
                     onChange={handleChange}
@@ -252,23 +254,23 @@ export default function RegisterDialog() {
             </div>
 
             <p className="text-xs text-center text-muted-foreground">
-              By registering you agree to our{" "}
-              <a href="#" className="underline underline-offset-2">Terms of Service</a>
+              {t.auth.termsText}{" "}
+              <a href="#" className="underline underline-offset-2">{t.auth.termsLink}</a>
             </p>
 
             <Button type="submit" className="w-full h-9 gap-2" disabled={loading}>
               <UserPlus className="h-3.5 w-3.5" />
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? t.auth.creatingAccount : t.auth.createAccount}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground">
-              Already have an account?{" "}
+              {t.auth.alreadyHaveAccount}{" "}
               <button
                 type="button"
                 onClick={() => openModal("login")}
                 className="text-primary/80 hover:text-primary hover:underline underline-offset-2 font-medium"
               >
-                Sign in
+                {t.auth.signIn}
               </button>
             </p>
           </form>

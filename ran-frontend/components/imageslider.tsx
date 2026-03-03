@@ -64,6 +64,7 @@ export default function ImageSlider({
             height={800}
             className={`w-full h-full object-cover ${rounded}`}
             priority={i === 0}
+            unoptimized
           />
           {slide.caption && (
             <div className="absolute bottom-6 w-full text-center text-white text-xl font-bold drop-shadow-lg">

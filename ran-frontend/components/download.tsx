@@ -7,10 +7,12 @@ import { Button } from "./ui/button";
 import Link from "next/link";
 
 import { DownloadLink, getDownloadLinks } from "@/lib/data/download.data";
+import { useT } from "@/context/LanguageContext";
 
 const DownloadSection = () => {
   const [downloadlinks, setDownloadLinks] = useState<DownloadLink[]>([]);
   const [loading, setLoading] = useState(true);
+  const t = useT();
 
   useEffect(() => {
     let cancelled = false;
@@ -46,18 +48,18 @@ const DownloadSection = () => {
     <MaxWidthWrapper>
       <div className="relative pb-4">
         <h3>
-          <span className="font-semibold text-base">Download the Game.</span>
-          <span className="text-sm"> Join the action!</span>
+          <span className="font-semibold text-base">{t.download.bannerTitle}</span>
+          <span className="text-sm"> {t.download.bannerAction}</span>
         </h3>
 
         <div className="pt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {loading ? (
             <p className="text-sm text-muted-foreground col-span-full text-center">
-              Loading downloads…
+              {t.download.loadingDownloads}
             </p>
           ) : visibleLinks.length === 0 ? (
             <p className="text-sm text-muted-foreground col-span-full text-center">
-              No downloads available.
+              {t.download.noDownloads}
             </p>
           ) : (
             visibleLinks.map((link, id) => (

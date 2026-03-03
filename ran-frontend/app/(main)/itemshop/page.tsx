@@ -29,6 +29,7 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/context/PublicConfigContext";
+import { useT } from "@/context/LanguageContext";
 import {
   PriceType,
   ShopCategory,
@@ -44,8 +45,8 @@ import PurchaseHistoryDialog from "@/components/shop/PurchaseHistoryDialog";
    Helpers
 ===================================================== */
 
-function getPriceTypeLabel(priceType: PriceType): string {
-  return priceType === PriceType.Premium ? "Premium Points" : "Vote Points";
+function getPriceTypeLabel(priceType: PriceType, premiumLabel: string, voteLabel: string): string {
+  return priceType === PriceType.Premium ? premiumLabel : voteLabel;
 }
 
 /* =====================================================
@@ -56,6 +57,7 @@ const ItemShopPage = () => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { config, loadingConfig } = usePublicConfig();
+  const t = useT();
 
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<ShopCategory[]>([]);
@@ -168,9 +170,9 @@ const ItemShopPage = () => {
       <div className="container mx-auto space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Item Shop</CardTitle>
+            <CardTitle>{t.itemShop.title}</CardTitle>
             <CardDescription>
-              Exclusive rewards, powerful items, and special offers await.
+              {t.itemShop.loading}
             </CardDescription>
           </CardHeader>
           <CardHeader>
@@ -204,9 +206,9 @@ const ItemShopPage = () => {
           <CardContent>
             <div className="flex flex-col items-center text-center py-8 space-y-2">
               <Ban size={64} />
-              <h1 className="text-2xl font-semibold">Forbidden Access</h1>
+              <h1 className="text-2xl font-semibold">{t.notFound.title}</h1>
               <p className="text-muted-foreground">
-                Login first to see content.
+                {t.notFound.message}
               </p>
             </div>
           </CardContent>
@@ -222,9 +224,9 @@ const ItemShopPage = () => {
           <CardContent>
             <div className="flex flex-col items-center text-center py-8 space-y-2">
               <Ban size={64} />
-              <h1 className="text-2xl font-semibold">Feature Unavailable</h1>
+              <h1 className="text-2xl font-semibold">{t.common.featureUnavailable}</h1>
               <p className="text-muted-foreground">
-                The item shop is currently disabled.
+                {t.common.featureUnavailableDesc}
               </p>
             </div>
           </CardContent>
@@ -272,9 +274,9 @@ const ItemShopPage = () => {
     <div className="container mx-auto space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Item Shop</CardTitle>
+          <CardTitle>{t.itemShop.title}</CardTitle>
           <CardDescription>
-            Exclusive rewards, powerful items, and special offers await.
+            {t.itemShop.subtitle}
           </CardDescription>
         </CardHeader>
 
@@ -282,7 +284,7 @@ const ItemShopPage = () => {
           <div className="pb-4">
             <div className="flex justify-between">
               <Button onClick={() => setHistoryOpen(true)}>
-                View Purchase History
+                {t.itemShop.viewHistory}
               </Button>
               <ComboboxDemo
                 options={dropdownOptions}
@@ -311,7 +313,7 @@ const ItemShopPage = () => {
                   iconMain={item.iconMain}
                   iconSub={item.iconSub}
                   price={item.price}
-                  purchaseType={getPriceTypeLabel(item.priceType)}
+                  purchaseType={getPriceTypeLabel(item.priceType, t.itemShop.premiumPoints, t.itemShop.votePoints)}
                   stock={item.stock}
                   isBox={item.isBox}
                   boxContent={item.boxContent}
@@ -320,7 +322,7 @@ const ItemShopPage = () => {
               ))
             ) : (
               <div className="col-span-full text-center py-10 text-muted-foreground">
-                No items found in this category.
+                {t.itemShop.noItems}
               </div>
             )}
           </div>

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { KeyRound, User, Lock, Hash } from "lucide-react";
 
 import { useModal } from "@/context/ModalContext";
+import { useT } from "@/context/LanguageContext";
 
 import {
   Dialog,
@@ -42,6 +43,7 @@ async function forgotPassword(data: {
 
 export default function ForgotPasswordDialog() {
   const { modal, openModal, closeModal } = useModal();
+  const t = useT();
 
   const [userid, setUserid] = useState("");
   const [pincode, setPincode] = useState("");
@@ -62,11 +64,11 @@ export default function ForgotPasswordDialog() {
     e.preventDefault();
 
     if (!userid || !pincode || !confirmPincode || !newPassword || !confirmNewPassword) {
-      toast.error("All fields are required.");
+      toast.error(t.auth.errors.allRequired);
       return;
     }
-    if (pincode !== confirmPincode) { toast.error("Pincodes do not match."); return; }
-    if (newPassword !== confirmNewPassword) { toast.error("Passwords do not match."); return; }
+    if (pincode !== confirmPincode) { toast.error(t.auth.errors.pincodeMismatch); return; }
+    if (newPassword !== confirmNewPassword) { toast.error(t.auth.errors.passwordMismatch); return; }
 
     setLoading(true);
 
@@ -99,9 +101,9 @@ export default function ForgotPasswordDialog() {
               <KeyRound className="h-4 w-4 text-sky-400" />
             </div>
             <div>
-              <h3 className="font-bold text-sm leading-tight">Reset Password</h3>
+              <h3 className="font-bold text-sm leading-tight">{t.auth.forgotTitle}</h3>
               <p className="text-xs text-muted-foreground">
-                Enter your account details and new password
+                {t.auth.forgotSubtitle}
               </p>
             </div>
           </div>
@@ -112,7 +114,7 @@ export default function ForgotPasswordDialog() {
           {/* Username */}
           <div className="grid gap-1.5">
             <Label htmlFor="fp-userid" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Username
+              {t.auth.username}
             </Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -132,7 +134,7 @@ export default function ForgotPasswordDialog() {
           <div className="grid grid-cols-2 gap-2">
             <div className="grid gap-1.5">
               <Label htmlFor="fp-pincode" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Pincode
+                {t.account.pincode}
               </Label>
               <div className="relative">
                 <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -149,7 +151,7 @@ export default function ForgotPasswordDialog() {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="fp-confirm-pincode" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Confirm
+                {t.auth.confirmLabel}
               </Label>
               <div className="relative">
                 <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -170,7 +172,7 @@ export default function ForgotPasswordDialog() {
           <div className="grid grid-cols-2 gap-2">
             <div className="grid gap-1.5">
               <Label htmlFor="fp-new-password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                New Password
+                {t.auth.newPasswordLabel}
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -187,7 +189,7 @@ export default function ForgotPasswordDialog() {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="fp-confirm-new-password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Confirm
+                {t.auth.confirmLabel}
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -210,17 +212,17 @@ export default function ForgotPasswordDialog() {
             disabled={loading}
           >
             <KeyRound className="h-3.5 w-3.5" />
-            {loading ? "Resetting..." : "Reset Password"}
+            {loading ? t.auth.resetting : t.auth.resetPassword}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            Remember your password?{" "}
+            {t.auth.rememberPassword}{" "}
             <button
               type="button"
               onClick={() => openModal("login")}
               className="text-primary/80 hover:text-primary hover:underline underline-offset-2 font-medium"
             >
-              Back to Sign In
+              {t.auth.backToSignIn}
             </button>
           </p>
         </form>

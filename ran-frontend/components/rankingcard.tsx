@@ -1,5 +1,8 @@
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Separator } from "./ui/separator";
+import { useT } from "@/context/LanguageContext";
 
 interface RankingCardProps {
   rank: number;
@@ -27,6 +30,7 @@ const RankingCard: React.FC<RankingCardProps> = ({
   money,
   school,
 }) => {
+  const t = useT();
   return (
     <>
       <div className="flex items-center gap-3 px-1 py-2 hover:bg-muted/40 transition-colors">
@@ -47,7 +51,7 @@ const RankingCard: React.FC<RankingCardProps> = ({
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold truncate">{playerName}</span>
             <span className="text-xs text-muted-foreground">
-              Level: {level}
+              {t.rankings.level}: {level}
             </span>
           </div>
 

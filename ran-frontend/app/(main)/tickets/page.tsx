@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/context/PublicConfigContext";
 import { toast } from "sonner";
+import { useT } from "@/context/LanguageContext";
 import { Ban, PlusCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -17,6 +18,7 @@ export default function TicketsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { config, loadingConfig } = usePublicConfig();
+  const t = useT();
   const isAuthed = Boolean(user);
   const shown = useRef(false);
 
@@ -63,9 +65,9 @@ export default function TicketsPage() {
         <Card>
           <CardContent className="flex flex-col items-center text-center py-12 space-y-4">
             <Ban size={56} className="opacity-50" />
-            <h1 className="text-xl font-semibold">Forbidden Access</h1>
+            <h1 className="text-xl font-semibold">{t.notFound.title}</h1>
             <p className="text-muted-foreground text-sm">
-              Login first to see content.
+              {t.notFound.message}
             </p>
           </CardContent>
         </Card>
@@ -79,9 +81,9 @@ export default function TicketsPage() {
         <Card>
           <CardContent className="flex flex-col items-center text-center py-12 space-y-4">
             <Ban size={56} className="opacity-50" />
-            <h1 className="text-xl font-semibold">Feature Unavailable</h1>
+            <h1 className="text-xl font-semibold">{t.common.featureUnavailable}</h1>
             <p className="text-muted-foreground text-sm">
-              The support ticket system is currently disabled.
+              {t.common.featureUnavailableDesc}
             </p>
           </CardContent>
         </Card>
@@ -110,16 +112,16 @@ export default function TicketsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold uppercase">My Support Tickets</h1>
+          <h1 className="text-2xl font-bold uppercase">{t.tickets.title}</h1>
           <p className="text-sm text-muted-foreground">
-            Monitor your requests and follow up on staff responses.
+            {t.tickets.subtitle}
           </p>
         </div>
 
         <Button asChild className="h-9 gap-2 self-start sm:self-auto">
           <Link href="/tickets/new">
             <PlusCircle size={14} />
-            Create Ticket
+            {t.tickets.newTicket}
           </Link>
         </Button>
       </div>
@@ -130,7 +132,7 @@ export default function TicketsPage() {
           <Card>
             <CardContent className="p-4">
               <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                Total
+                {t.tickets.total}
               </p>
               <p className="text-2xl font-bold mt-1 tabular-nums">{tickets.length}</p>
             </CardContent>
@@ -139,7 +141,7 @@ export default function TicketsPage() {
           <Card>
             <CardContent className="p-4">
               <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                Open
+                {t.tickets.open}
               </p>
               <p className="text-2xl font-bold mt-1 tabular-nums text-emerald-500">
                 {openCount}
@@ -150,7 +152,7 @@ export default function TicketsPage() {
           <Card>
             <CardContent className="p-4">
               <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                Closed
+                {t.tickets.closed}
               </p>
               <p className="text-2xl font-bold mt-1 tabular-nums text-muted-foreground">
                 {closedCount}
@@ -171,14 +173,14 @@ export default function TicketsPage() {
             </div>
           ) : tickets.length === 0 ? (
             <div className="text-center py-14 space-y-3">
-              <h3 className="text-base font-semibold">You have no tickets yet</h3>
+              <h3 className="text-base font-semibold">{t.tickets.noTickets}</h3>
               <p className="text-muted-foreground text-sm">
-                Need assistance? Create your first support ticket.
+                {t.tickets.needHelp}
               </p>
               <Button asChild className="mt-2 h-9 gap-2">
                 <Link href="/tickets/new">
                   <PlusCircle size={14} />
-                  Create Ticket
+                  {t.tickets.newTicket}
                 </Link>
               </Button>
             </div>
@@ -194,11 +196,11 @@ export default function TicketsPage() {
                     disabled={currentPage === 1}
                     onClick={() => handlePageChange(currentPage - 1)}
                   >
-                    Previous
+                    {t.common.previous}
                   </Button>
 
                   <span className="text-xs text-muted-foreground">
-                    Page {currentPage} of {totalPages}
+                    {t.common.page} {currentPage} {t.common.of} {totalPages}
                   </span>
 
                   <Button
@@ -207,7 +209,7 @@ export default function TicketsPage() {
                     disabled={currentPage === totalPages}
                     onClick={() => handlePageChange(currentPage + 1)}
                   >
-                    Next
+                    {t.common.next}
                   </Button>
                 </div>
               )}

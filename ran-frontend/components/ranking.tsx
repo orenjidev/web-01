@@ -13,6 +13,7 @@ import {
 
 import { RankingPlayer, getRankingPlayers } from "@/lib/data/ranking.data";
 import { usePublicConfig } from "@/context/PublicConfigContext";
+import { useT } from "@/context/LanguageContext";
 
 /* =====================================================
    Component
@@ -22,6 +23,7 @@ const RankingSection = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { config: publicConfig } = usePublicConfig();
+  const t = useT();
 
   const rankingLimit = publicConfig?.gameoptions?.uihelper?.max_toprank ?? 10;
 
@@ -58,16 +60,14 @@ const RankingSection = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Player Ranking</CardTitle>
-        <CardDescription>
-          Top players based on recent performance
-        </CardDescription>
+        <CardTitle>{t.rankings.sidebarTitle}</CardTitle>
+        <CardDescription>{t.rankings.sidebarSubtitle}</CardDescription>
       </CardHeader>
 
       <CardContent>
-        {loading && <p>Loading rankings...</p>}
+        {loading && <p>{t.rankings.loadingRankings}</p>}
         {error && <p className="text-red-500">{error}</p>}
-        {!loading && !error && players.length === 0 && <p>No players found.</p>}
+        {!loading && !error && players.length === 0 && <p>{t.rankings.noPlayers}</p>}
 
         {!loading &&
           !error &&
@@ -89,7 +89,7 @@ const RankingSection = () => {
 
       <CardFooter>
         <span className="text-xs text-muted-foreground">
-          Ranking cached every 30 minutes
+          {t.rankings.cachedNotice}
         </span>
       </CardFooter>
     </Card>

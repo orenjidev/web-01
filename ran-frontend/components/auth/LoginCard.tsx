@@ -8,6 +8,7 @@ import { LogIn, User, Lock } from "lucide-react";
 import { loginUser, fetchUserDetails } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
 import { useModal } from "@/context/ModalContext";
+import { useT } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export default function LoginCard({
   const router = useRouter();
   const { refresh } = useAuth();
   const { openModal } = useModal();
+  const t = useT();
 
   const [userid, setUserid] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +66,7 @@ export default function LoginCard({
     e.preventDefault();
 
     if (!userid || !password) {
-      toast.error("Please enter your username and password.");
+      toast.error(t.auth.errors.enterCredentials);
       return;
     }
 
@@ -105,9 +107,9 @@ export default function LoginCard({
             <LogIn className="h-4 w-4 text-amber-400" />
           </div>
           <div>
-            <h3 className="font-bold text-sm leading-tight">Account Login</h3>
+            <h3 className="font-bold text-sm leading-tight">{t.auth.loginTitle}</h3>
             <p className="text-xs text-muted-foreground">
-              Enter your credentials below
+              {t.auth.loginSubtitle}
             </p>
           </div>
         </div>
@@ -120,7 +122,7 @@ export default function LoginCard({
             htmlFor="userid"
             className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
           >
-            Username
+            {t.auth.username}
           </Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -128,7 +130,7 @@ export default function LoginCard({
               id="userid"
               name="userid"
               type="text"
-              placeholder="your username"
+              placeholder={t.auth.usernamePlaceholder}
               required
               value={userid}
               onChange={(e) => setUserid(e.target.value)}
@@ -143,14 +145,14 @@ export default function LoginCard({
               htmlFor="password"
               className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
             >
-              Password
+              {t.auth.password}
             </Label>
             <button
               type="button"
               onClick={() => openModal("forgot")}
               className="text-xs text-primary/80 hover:text-primary hover:underline underline-offset-2"
             >
-              Forgot?
+              {t.auth.forgotLink}
             </button>
           </div>
           <div className="relative">
@@ -174,23 +176,23 @@ export default function LoginCard({
           disabled={loading}
         >
           {loading ? (
-            "Signing in..."
+            t.auth.signingIn
           ) : (
             <>
               <LogIn className="h-3.5 w-3.5" />
-              Sign In
+              {t.auth.signIn}
             </>
           )}
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">
-          No account?{" "}
+          {t.auth.noAccount}{" "}
           <button
             type="button"
             onClick={() => openModal("register")}
             className="text-primary/80 hover:text-primary hover:underline underline-offset-2 font-medium"
           >
-            Create one
+            {t.auth.createOne}
           </button>
         </p>
       </form>

@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/context/LanguageContext";
 
 export default function TicketDetailPage() {
   const params = useParams();
@@ -21,6 +22,7 @@ export default function TicketDetailPage() {
 
   const { user, loading: authLoading } = useAuth();
   const { config } = usePublicConfig();
+  const t = useT();
   const isAuthed = Boolean(user);
   const shown = useRef(false);
 
@@ -117,8 +119,8 @@ export default function TicketDetailPage() {
         <Card>
           <CardContent className="flex flex-col items-center text-center py-12 space-y-3">
             <Ban size={56} className="opacity-60" />
-            <h1 className="text-xl font-semibold">Forbidden Access</h1>
-            <p className="text-muted-foreground">Login first to see content.</p>
+            <h1 className="text-xl font-semibold">{t.notFound.title}</h1>
+            <p className="text-muted-foreground">{t.notFound.message}</p>
           </CardContent>
         </Card>
       </div>
@@ -131,8 +133,8 @@ export default function TicketDetailPage() {
         <Card>
           <CardContent className="flex flex-col items-center text-center py-12 space-y-3">
             <Ban size={56} className="opacity-60" />
-            <h1 className="text-xl font-semibold">Feature Unavailable</h1>
-            <p className="text-muted-foreground">The support ticket system is currently disabled.</p>
+            <h1 className="text-xl font-semibold">{t.common.featureUnavailable}</h1>
+            <p className="text-muted-foreground">{t.common.featureUnavailableDesc}</p>
           </CardContent>
         </Card>
       </div>
@@ -140,10 +142,10 @@ export default function TicketDetailPage() {
   }
 
   if (authLoading || loading)
-    return <p className="max-w-4xl mx-auto py-10">Loading...</p>;
+    return <p className="max-w-4xl mx-auto py-10">{t.common.loading}</p>;
 
   if (!ticket)
-    return <p className="max-w-4xl mx-auto py-10">Ticket not found.</p>;
+    return <p className="max-w-4xl mx-auto py-10">{t.tickets.ticketNotFound}</p>;
 
   const isClosed = ticket.status === "Closed";
 
@@ -176,7 +178,7 @@ export default function TicketDetailPage() {
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
         >
           <ArrowLeft size={18} />
-          Back
+          {t.tickets.back}
         </button>
 
         <span
@@ -201,21 +203,21 @@ export default function TicketDetailPage() {
       {/* Metadata */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border rounded-xl p-5 bg-muted/20">
         <div>
-          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Priority</p>
+          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{t.tickets.priority}</p>
           <p className="font-medium mt-0.5">{ticket.priority}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Game ID</p>
+          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{t.tickets.gameId}</p>
           <p className="font-medium mt-0.5">{ticket.gameId || "N/A"}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Created</p>
+          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{t.tickets.createdAt}</p>
           <p className="font-medium mt-0.5">
             {new Date(ticket.created_at).toLocaleString()}
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Closed</p>
+          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{t.tickets.closedAt}</p>
           <p className="font-medium mt-0.5">
             {ticket.closed_at
               ? new Date(ticket.closed_at).toLocaleString()
@@ -228,7 +230,7 @@ export default function TicketDetailPage() {
       <Card>
         <CardContent className="p-5 space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Description
+            {t.tickets.description}
           </h3>
           <p className="whitespace-pre-wrap text-sm leading-relaxed">
             {ticket.description}
@@ -272,7 +274,7 @@ export default function TicketDetailPage() {
       {/* Conversation */}
       <div className="space-y-4">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Conversation
+          {t.tickets.conversation}
         </h3>
 
         {paginatedReplies.map((r) => (
@@ -290,7 +292,7 @@ export default function TicketDetailPage() {
               }`}
             >
               <p className={`text-xs font-semibold mb-2 ${r.isStaffReply ? "text-muted-foreground" : "opacity-70"}`}>
-                {r.isStaffReply ? `Support${r.replyUserID ? ` • ${r.replyUserID}` : ""}` : "You"}
+                {r.isStaffReply ? `${t.tickets.support}${r.replyUserID ? ` • ${r.replyUserID}` : ""}` : t.tickets.you}
               </p>
               <p className="whitespace-pre-wrap text-sm leading-relaxed">
                 {r.message}
@@ -344,11 +346,11 @@ export default function TicketDetailPage() {
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
             >
-              Previous
+              {t.common.previous}
             </Button>
 
             <span className="text-xs text-muted-foreground">
-              Page {currentPage} of {totalPages}
+              {t.common.page} {currentPage} {t.common.of} {totalPages}
             </span>
 
             <Button
@@ -357,7 +359,7 @@ export default function TicketDetailPage() {
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
             >
-              Next
+              {t.common.next}
             </Button>
           </div>
         )}
@@ -368,13 +370,13 @@ export default function TicketDetailPage() {
         <Card>
           <CardContent className="p-5 space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Add Reply
+              {t.tickets.reply}
             </h3>
 
             <textarea
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
               rows={3}
-              placeholder="Write your reply… (you can paste images directly)"
+              placeholder={t.tickets.replyPlaceholder}
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               onPaste={(e) => {
@@ -423,7 +425,7 @@ export default function TicketDetailPage() {
                 disabled={sending}
                 className="h-9 gap-2"
               >
-                {sending ? "Sending..." : "Send Reply"}
+                {sending ? t.common.sending : t.tickets.submit}
               </Button>
             </div>
           </CardContent>

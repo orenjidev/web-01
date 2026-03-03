@@ -9,6 +9,12 @@ export interface PublicConfig {
   ePointsName: string;
   footertext: string;
   highlights: string[];
+  defaultLanguage: string;
+
+  sliderConfig: {
+    bannerSlides: { src: string; caption: string; enabled: boolean }[];
+    contentSlides: { src: string; caption: string; enabled: boolean }[];
+  };
 
   features: {
     changePassword: boolean;

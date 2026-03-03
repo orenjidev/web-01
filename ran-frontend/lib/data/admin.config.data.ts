@@ -22,3 +22,15 @@ export async function saveConfigSection(
   const json = await res.json();
   if (!res.ok) throw new Error(json.message || "Failed to save");
 }
+
+export async function uploadSliderImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(
+    `${BASE}/api/adminpanel/server-config/upload-image`,
+    { method: "POST", credentials: "include", body: formData },
+  );
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || "Upload failed");
+  return json.url as string;
+}

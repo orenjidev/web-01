@@ -6,15 +6,9 @@ import { Facebook, MessageCircle, Youtube } from "lucide-react";
 import MaxWidthWrapper from "@/components/maxwidthwrapper";
 import { useModal } from "@/context/ModalContext";
 import { usePublicConfig } from "@/context/PublicConfigContext";
+import { useT } from "@/context/LanguageContext";
 
 const CURRENT_YEAR = new Date().getFullYear();
-
-const gameLinks = [
-  { label: "News", href: "/" },
-  { label: "Download", href: "/download" },
-  { label: "Rankings", href: "/rankings" },
-];
-
 
 function FooterLinkGroup({
   heading,
@@ -36,6 +30,7 @@ function FooterLinkGroup({
 export default function Footer() {
   const { openModal } = useModal();
   const { config } = usePublicConfig();
+  const t = useT();
 
   const serverName = config?.serverName ?? "RAN Online";
   const serverMotto = config?.serverMotto;
@@ -44,6 +39,8 @@ export default function Footer() {
   const shopEnabled = config?.shop?.enabled !== false;
   const topUpEnabled = config?.features?.topUp !== false;
   const ticketsEnabled = config?.features?.ticketSystem !== false;
+
+  const linkClass = "text-sm text-muted-foreground hover:text-foreground transition-colors";
 
   return (
     <footer className="bg-background border-t border-border mt-8">
@@ -54,92 +51,48 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1 flex flex-col">
             <p className="text-sm font-bold leading-tight">{serverName}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {serverMotto || "Your adventure awaits. Play free today."}
+              {serverMotto || t.footer.tagline}
             </p>
 
             {/* Social icons */}
             <div className="flex items-center gap-2 mt-4">
-              <a
-                href="#"
-                aria-label="Facebook"
-                className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors"
-              >
+              <a href="#" aria-label="Facebook" className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors">
                 <Facebook className="h-3.5 w-3.5" />
               </a>
-              <a
-                href="#"
-                aria-label="Discord"
-                className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors"
-              >
+              <a href="#" aria-label="Discord" className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors">
                 <MessageCircle className="h-3.5 w-3.5" />
               </a>
-              <a
-                href="#"
-                aria-label="YouTube"
-                className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors"
-              >
+              <a href="#" aria-label="YouTube" className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors">
                 <Youtube className="h-3.5 w-3.5" />
               </a>
             </div>
           </div>
 
           {/* Game */}
-          <FooterLinkGroup heading="Game">
-            {gameLinks.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {l.label}
-              </Link>
-            ))}
+          <FooterLinkGroup heading={t.footer.game}>
+            <Link href="/" className={linkClass}>{t.nav.news}</Link>
+            <Link href="/download" className={linkClass}>{t.nav.download}</Link>
+            <Link href="/rankings" className={linkClass}>{t.nav.rankings}</Link>
           </FooterLinkGroup>
 
           {/* Shop */}
-          <FooterLinkGroup heading="Shop">
-            {shopEnabled && (
-              <Link href="/itemshop" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Item Shop
-              </Link>
-            )}
-            {topUpEnabled && (
-              <Link href="/topup" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Top-Up
-              </Link>
-            )}
+          <FooterLinkGroup heading={t.footer.shop}>
+            {shopEnabled && <Link href="/itemshop" className={linkClass}>{t.nav.itemShop}</Link>}
+            {topUpEnabled && <Link href="/topup" className={linkClass}>{t.footer.topUp}</Link>}
           </FooterLinkGroup>
 
           {/* Account */}
-          <FooterLinkGroup heading="Account">
-            <button
-              type="button"
-              onClick={() => openModal("login")}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left"
-            >
-              Sign In
+          <FooterLinkGroup heading={t.footer.account}>
+            <button type="button" onClick={() => openModal("login")} className={`${linkClass} text-left`}>
+              {t.footer.signIn}
             </button>
-            <Link
-              href="/register"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Register
-            </Link>
-            <Link
-              href="/account"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              My Account
-            </Link>
+            <Link href="/register" className={linkClass}>{t.nav.register}</Link>
+            <Link href="/account" className={linkClass}>{t.footer.myAccount}</Link>
           </FooterLinkGroup>
 
           {/* Support */}
-          <FooterLinkGroup heading="Support">
-            {ticketsEnabled && (
-              <Link href="/tickets" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Support Tickets
-              </Link>
-            )}
+          <FooterLinkGroup heading={t.footer.support}>
+            {ticketsEnabled && <Link href="/tickets" className={linkClass}>{t.footer.supportTickets}</Link>}
           </FooterLinkGroup>
 
         </div>
@@ -147,7 +100,7 @@ export default function Footer() {
 
       {/* Copyright */}
       <div className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        {footerText || `© ${CURRENT_YEAR} ${serverName}. All rights reserved.`}
+        {footerText || `© ${CURRENT_YEAR} ${serverName}. ${t.footer.rights}`}
       </div>
     </footer>
   );

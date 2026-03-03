@@ -51,6 +51,7 @@ export const baseServerConfig = {
     maintenanceMode: false,
     enableLogs: true,
     ismd5: true, // legacy compatibility only
+    defaultLanguage: "en", // supported: "en", "th"
   },
 
   /**
@@ -152,6 +153,21 @@ export const baseServerConfig = {
     levelRequirement: 200,
     voteIntervalHours: 12,
     reward: 2,
+  },
+
+  /**
+   * =====================================================
+   * Slider Configuration
+   * =====================================================
+   */
+  sliderConfig: {
+    bannerSlides: [
+      { src: "/images/slider/slide_1.jpeg", caption: "Chapter 18: Paragon", enabled: true },
+    ],
+    contentSlides: [
+      { src: "/images/slider/slide_1.jpeg", caption: "Chapter 18: Paragon", enabled: true },
+      { src: "/images/slider/slide_2.jpeg", caption: "Chapter 19: Revelation", enabled: true },
+    ],
   },
 
   /**

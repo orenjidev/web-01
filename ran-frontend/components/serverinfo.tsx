@@ -9,9 +9,11 @@ import {
   CardTitle,
 } from "./ui/card";
 import { usePublicConfig } from "@/context/PublicConfigContext";
+import { useT } from "@/context/LanguageContext";
 
 export const ServerInfoSection = () => {
   const { config } = usePublicConfig();
+  const t = useT();
 
   const serverName = config?.serverName ?? "Server Information";
   const serverMotto = config?.serverMotto ?? "";
@@ -26,7 +28,7 @@ export const ServerInfoSection = () => {
         </CardHeader>
         {highlights.length > 0 && (
           <CardContent>
-            <span className="font-medium text-sm">FEATURES</span>
+            <span className="font-medium text-sm">{t.serverInfo.features}</span>
             <div className="text-xs mt-1">
               {highlights.map((h, i) => (
                 <p key={i}>{h}</p>
