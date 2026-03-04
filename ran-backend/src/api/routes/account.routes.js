@@ -95,4 +95,23 @@ router.post("/change-email", accountController.changeEmailController);
  */
 router.get("/me", accountController.getAccountInfoController);
 
+/**
+ * -----------------------------------------------------
+ * POST /api/account/convert-points
+ * -----------------------------------------------------
+ * Description:
+ *   Convert VP to EP or EP to VP for the authenticated user.
+ *   Requires pincode verification. Feature must be enabled
+ *   in server config (convertfeature.vp2ep / convertfeature.ep2vp).
+ *
+ * Request Body:
+ *   - direction : "vp2ep" | "ep2vp" (required)
+ *   - amount    : number (required, >= configured minimum)
+ *   - pincode   : string (required)
+ *
+ * Success Response:
+ *   - message : string
+ */
+router.post("/convert-points", accountController.convertPointsController);
+
 export default router;

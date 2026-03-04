@@ -49,6 +49,9 @@ const messages = {
       REBORN_DISABLED: "Reborn feature is currently disabled",
       CHARACTER_DELETE_DISABLED:
         "Character deletion feature is currently disabled",
+
+      CONVERT_VP2EP_DISABLED: "VP to EP conversion is currently disabled",
+      CONVERT_EP2VP_DISABLED: "EP to VP conversion is currently disabled",
     },
 
     /* -------------------------
@@ -107,6 +110,19 @@ const messages = {
       EMAIL_MISMATCH: "Email confirmation does not match",
       EMAIL_UPDATED: "Email updated successfully",
       PINCODE_CHANGED: "Pincode updated successfully",
+    },
+
+    /* -------------------------
+       Point Conversion
+    -------------------------- */
+
+    CONVERT: {
+      INVALID_DIRECTION: "Invalid conversion direction",
+      AMOUNT_INVALID: "Amount must be a positive integer",
+      AMOUNT_TOO_LOW: (min) => `Minimum conversion amount is ${min}`,
+      INSUFFICIENT_BALANCE: "Insufficient balance to complete this conversion",
+      SUCCESS: (amount, from, received, to) =>
+        `Converted ${amount} ${from} to ${received} ${to} successfully`,
     },
 
     /* -------------------------
@@ -251,6 +267,8 @@ const messages = {
       ACTION_TICKET_REPLY: "Added reply to ticket",
       ACTION_TICKET_STATUS_UPDATE: "Updated ticket status",
       ACTION_TICKET_ASSIGN: "Assigned ticket to staff",
+
+      ACTION_CONVERT_POINTS: "Point conversion performed",
     },
   },
 };

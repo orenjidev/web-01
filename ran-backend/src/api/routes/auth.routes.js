@@ -103,7 +103,7 @@ router.post("/login", authService.loginController);
  *   - 401 Unauthorized
  *   {
  *     ok      : false,
- *     message : string
+ *     message : stringw
  *   }
  *
  * Error Cases:

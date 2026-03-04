@@ -187,6 +187,18 @@ export const th = {
     eligibleReborn: "คุณมีสิทธิ์รีเกิดแล้ว",
     loadingReborn: "กำลังโหลดข้อมูลการรีเกิด...",
 
+    // Convert Points section
+    convertPoints: "แปลงพอยท์",
+    convertVp2Ep: "VP → EP",
+    convertEp2Vp: "EP → VP",
+    convertDirection: "ประเภทการแปลง",
+    convertAmount: "จำนวน",
+    convertPincode: "รหัส PIN",
+    convertRate: "อัตราแลกเปลี่ยน",
+    convertMinimum: "ขั้นต่ำ",
+    convertReceive: "คุณจะได้รับ",
+    convertSubmit: "แปลง",
+
     // Top Up section
     topUpRedeemTitle: "แลกรหัสเติมเงิน",
     topUpRedeemDesc: "กรอกรหัสเติมเงินและ PIN ของคุณ",
@@ -230,6 +242,7 @@ export const th = {
       selectClass: "กรุณาเลือกอาชีพ",
       confirmDelete: "คุณแน่ใจหรือไม่ที่จะลบตัวละครนี้? การกระทำนี้ไม่สามารถยกเลิกได้",
       codeAndPinRequired: "กรุณากรอกรหัสและ PIN",
+      invalidAmount: "กรุณากรอกจำนวนที่ถูกต้องและมากกว่า 0",
     },
   },
 

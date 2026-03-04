@@ -187,6 +187,18 @@ export const en = {
     eligibleReborn: "You are eligible for rebirth.",
     loadingReborn: "Loading reborn data...",
 
+    // Convert Points section
+    convertPoints: "Convert Points",
+    convertVp2Ep: "VP → EP",
+    convertEp2Vp: "EP → VP",
+    convertDirection: "Conversion Type",
+    convertAmount: "Amount",
+    convertPincode: "Pincode",
+    convertRate: "Rate",
+    convertMinimum: "Minimum",
+    convertReceive: "You will receive",
+    convertSubmit: "Convert",
+
     // Top Up section
     topUpRedeemTitle: "Redeem Top Up",
     topUpRedeemDesc: "Enter your top up code and PIN.",
@@ -230,6 +242,7 @@ export const en = {
       selectClass: "Please select a class.",
       confirmDelete: "Are you sure you want to delete this character? This action cannot be undone.",
       codeAndPinRequired: "Code and PIN are required.",
+      invalidAmount: "Please enter a valid positive amount.",
     },
   },
 

@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerConfig, saveConfigSection, uploadSliderImage } from "@/lib/data/admin.config.data";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 
 /* ─────────────────────────────
    Small helpers
@@ -573,6 +574,94 @@ function VotingTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<vo
 }
 
 /* ─────────────────────────────
+   Section: System Requirements
+───────────────────────────── */
+
+interface SysReqRow {
+  component: string;
+  min: string;
+  rec: string;
+}
+
+function SystemRequirementsTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<void> }) {
+  const [rows, setRows] = useState<SysReqRow[]>(data.rows ?? []);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setRows(data.rows ?? []);
+  }, [data]);
+
+  function updateRow(idx: number, field: keyof SysReqRow, value: string) {
+    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)));
+  }
+
+  function addRow() {
+    setRows((prev) => [...prev, { component: "", min: "", rec: "" }]);
+  }
+
+  function removeRow(idx: number) {
+    setRows((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave({ rows });
+      toast.success("System requirements saved.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="space-y-2">
+        {rows.map((row, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <Input
+              className="w-36 shrink-0 text-xs h-8"
+              placeholder="Component"
+              value={row.component}
+              onChange={(e) => updateRow(idx, "component", e.target.value)}
+            />
+            <Input
+              className="flex-1 min-w-0 text-xs h-8"
+              placeholder="Minimum"
+              value={row.min}
+              onChange={(e) => updateRow(idx, "min", e.target.value)}
+            />
+            <Input
+              className="flex-1 min-w-0 text-xs h-8"
+              placeholder="Recommended (leave blank to span both columns)"
+              value={row.rec}
+              onChange={(e) => updateRow(idx, "rec", e.target.value)}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => removeRow(idx)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+        {rows.length === 0 && (
+          <p className="text-xs text-muted-foreground py-1">No rows. Add one below.</p>
+        )}
+      </div>
+      <Button variant="outline" size="sm" className="mt-2 h-7 text-xs gap-1.5" onClick={addRow}>
+        <Plus className="h-3.5 w-3.5" />
+        Add Row
+      </Button>
+      <SaveBar onSave={handleSave} saving={saving} />
+    </div>
+  );
+}
+
+/* ─────────────────────────────
    Section: Slider Config
 ───────────────────────────── */
 
@@ -580,6 +669,7 @@ interface Slide {
   src: string;
   caption: string;
   enabled: boolean;
+  link: string;
 }
 
 function SlideList({
@@ -599,7 +689,7 @@ function SlideList({
   }
 
   function addSlide() {
-    onChange([...slides, { src: "", caption: "", enabled: true }]);
+    onChange([...slides, { src: "", caption: "", enabled: true, link: "" }]);
   }
 
   function removeSlide(idx: number) {
@@ -649,10 +739,16 @@ function SlideList({
               onChange={(e) => updateSlide(idx, "src", e.target.value)}
             />
             <Input
-              className="w-40 shrink-0 text-xs h-8"
+              className="w-36 shrink-0 text-xs h-8"
               placeholder="Caption"
               value={slide.caption}
               onChange={(e) => updateSlide(idx, "caption", e.target.value)}
+            />
+            <Input
+              className="w-40 shrink-0 text-xs h-8"
+              placeholder="Link URL (optional)"
+              value={slide.link ?? ""}
+              onChange={(e) => updateSlide(idx, "link", e.target.value)}
             />
             {/* Upload button */}
             <label className="shrink-0">
@@ -705,6 +801,7 @@ function SlidesTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<vo
   const [bannerSlides, setBannerSlides] = useState<Slide[]>(data.bannerSlides ?? []);
   const [contentSlides, setContentSlides] = useState<Slide[]>(data.contentSlides ?? []);
   const [saving, setSaving] = useState(false);
+  const { refresh } = usePublicConfig();
 
   useEffect(() => {
     setBannerSlides(data.bannerSlides ?? []);
@@ -715,6 +812,7 @@ function SlidesTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<vo
     setSaving(true);
     try {
       await onSave({ bannerSlides, contentSlides });
+      await refresh();
       toast.success("Sliders saved.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed.");
@@ -848,6 +946,10 @@ export function ConfigSection() {
           <Card className="col-span-2">
             <CardHeader><CardTitle className="text-sm">Sliders</CardTitle></CardHeader>
             <CardContent><SlidesTab data={config.sliderConfig ?? {}} onSave={makeSaver("sliderConfig")} /></CardContent>
+          </Card>
+          <Card className="col-span-2">
+            <CardHeader><CardTitle className="text-sm">System Requirements</CardTitle></CardHeader>
+            <CardContent><SystemRequirementsTab data={config.systemRequirements ?? {}} onSave={makeSaver("systemRequirements")} /></CardContent>
           </Card>
         </TabsContent>
       </Tabs>

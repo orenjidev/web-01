@@ -31,6 +31,10 @@ export function getPublicConfig(req, res) {
       premiumShop: baseServerConfig.shop.premiumShop,
     },
 
+    systemRequirements: {
+      rows: baseServerConfig.systemRequirements?.rows ?? [],
+    },
+
     gameoptions: {
       changeSchool: {
         enabled: baseServerConfig.changeSchool.enabled,

@@ -157,16 +157,32 @@ export const baseServerConfig = {
 
   /**
    * =====================================================
+   * System Requirements
+   * =====================================================
+   */
+  systemRequirements: {
+    rows: [
+      { component: "Operating System", min: "Windows 7/10", rec: "Windows 11" },
+      { component: "CPU", min: "Intel Pentium 3 1.2GHz or AMD Athlon 1500", rec: "Intel Pentium 4 2.4GHz, or higher" },
+      { component: "MEMORY", min: "4GB RAM", rec: "16GB RAM" },
+      { component: "GRAPHICS CARD", min: "NVIDIA 1050TI/RX570", rec: "RTX 30 SERIES / RX6000 SERIES" },
+      { component: "HARD DRIVE", min: "6GB of available hard drive space", rec: "" },
+      { component: "CONNECTION SPEED", min: "500KBPS", rec: "100MBPS" },
+    ],
+  },
+
+  /**
+   * =====================================================
    * Slider Configuration
    * =====================================================
    */
   sliderConfig: {
     bannerSlides: [
-      { src: "/images/slider/slide_1.jpeg", caption: "Chapter 18: Paragon", enabled: true },
+      { src: "/images/slider/slide_1.jpeg", caption: "Chapter 18: Paragon", enabled: true, link: "" },
     ],
     contentSlides: [
-      { src: "/images/slider/slide_1.jpeg", caption: "Chapter 18: Paragon", enabled: true },
-      { src: "/images/slider/slide_2.jpeg", caption: "Chapter 19: Revelation", enabled: true },
+      { src: "/images/slider/slide_1.jpeg", caption: "Chapter 18: Paragon", enabled: true, link: "" },
+      { src: "/images/slider/slide_2.jpeg", caption: "Chapter 19: Revelation", enabled: true, link: "" },
     ],
   },
 

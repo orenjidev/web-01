@@ -16,7 +16,8 @@ export type AccountAction =
   | "reborn"
   | "changeClass"
   | "topUp"
-  | "topUpHistory";
+  | "topUpHistory"
+  | "convertPoints";
 
 export interface AccountInfo {
   userid: string;
@@ -142,5 +143,19 @@ export async function changePincode(
       email,
       confirmEmail,
     }),
+  });
+}
+
+/* -----------------------------------------------------
+   Convert Points
+----------------------------------------------------- */
+export async function convertPoints(
+  direction: "vp2ep" | "ep2vp",
+  amount: number,
+  pincode: string,
+) {
+  return apiFetch<BasicResponse>("/api/account/convert-points", {
+    method: "POST",
+    body: JSON.stringify({ direction, amount, pincode }),
   });
 }

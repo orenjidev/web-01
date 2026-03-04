@@ -5,6 +5,7 @@ import {
   FileText,
   GalleryVerticalEnd,
   LayoutDashboard,
+  ScrollText,
   Settings2,
   ShoppingBag,
   Sword,
@@ -34,7 +35,9 @@ export type AdminSection =
   | "shop.items"
   | "news"
   | "downloads"
-  | "server.config";
+  | "server.config"
+  | "logs.user"
+  | "logs.gm";
 
 const data = {
   user: {
@@ -106,6 +109,15 @@ const data = {
       items: [
         { title: "Manage News", action: "news" as AdminSection },
         { title: "Manage Downloads", action: "downloads" as AdminSection },
+      ],
+    },
+    {
+      title: "Logs",
+      url: "#",
+      icon: ScrollText,
+      items: [
+        { title: "User Action Log", action: "logs.user" as AdminSection },
+        { title: "GM Action Log", action: "logs.gm" as AdminSection },
       ],
     },
     {

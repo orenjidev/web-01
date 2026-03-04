@@ -12,8 +12,12 @@ export interface PublicConfig {
   defaultLanguage: string;
 
   sliderConfig: {
-    bannerSlides: { src: string; caption: string; enabled: boolean }[];
-    contentSlides: { src: string; caption: string; enabled: boolean }[];
+    bannerSlides: { src: string; caption: string; enabled: boolean; link?: string }[];
+    contentSlides: { src: string; caption: string; enabled: boolean; link?: string }[];
+  };
+
+  systemRequirements: {
+    rows: { component: string; min: string; rec: string }[];
   };
 
   features: {

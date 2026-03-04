@@ -18,6 +18,7 @@ const DB_SECTIONS = [
   "classes",
   "social",
   "sliderConfig",
+  "systemRequirements",
 ];
 
 const CREATE_TABLE_SQL = `

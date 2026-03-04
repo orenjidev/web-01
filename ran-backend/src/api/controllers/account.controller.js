@@ -67,3 +67,33 @@ export const getAccountInfoController = async (req, res) => {
   const result = await accountFunc.getAccountInfo(req.ctx);
   return res.json(result);
 };
+
+export const convertPointsController = async (req, res) => {
+  const MSG = getMessage(req.ctx?.lang);
+  const { direction } = req.body || {};
+
+  if (direction !== "vp2ep" && direction !== "ep2vp") {
+    return res.status(400).json({
+      ok: false,
+      message: MSG.CONVERT.INVALID_DIRECTION,
+    });
+  }
+
+  if (!baseServerConfig.convertfeature[direction]?.enabled) {
+    return res.status(403).json({
+      ok: false,
+      message:
+        direction === "vp2ep"
+          ? MSG.FEATURE.CONVERT_VP2EP_DISABLED
+          : MSG.FEATURE.CONVERT_EP2VP_DISABLED,
+    });
+  }
+
+  const result = await accountFunc.convertPoints(req.body, req.ctx);
+
+  if (!result.ok) {
+    return res.status(400).json(result);
+  }
+
+  return res.json(result);
+};

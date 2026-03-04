@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 export type Slide = {
   src: string;
   caption?: string;
+  link?: string;
 };
 
 type ImageSliderProps = {
@@ -57,19 +58,45 @@ export default function ImageSlider({
             i === current ? "opacity-100" : "opacity-0"
           }`}
         >
-          <Image
-            src={slide.src}
-            alt={slide.caption ?? `Slide ${i + 1}`}
-            width={1920}
-            height={800}
-            className={`w-full h-full object-cover ${rounded}`}
-            priority={i === 0}
-            unoptimized
-          />
-          {slide.caption && (
-            <div className="absolute bottom-6 w-full text-center text-white text-xl font-bold drop-shadow-lg">
-              {slide.caption}
-            </div>
+          {slide.link ? (
+            <a
+              href={slide.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`block w-full h-full ${rounded}`}
+            >
+              <Image
+                src={slide.src}
+                alt={slide.caption ?? `Slide ${i + 1}`}
+                width={1920}
+                height={800}
+                className={`w-full h-full object-cover ${rounded}`}
+                priority={i === 0}
+                unoptimized
+              />
+              {slide.caption && (
+                <div className="absolute bottom-6 w-full text-center text-white text-xl font-bold drop-shadow-lg">
+                  {slide.caption}
+                </div>
+              )}
+            </a>
+          ) : (
+            <>
+              <Image
+                src={slide.src}
+                alt={slide.caption ?? `Slide ${i + 1}`}
+                width={1920}
+                height={800}
+                className={`w-full h-full object-cover ${rounded}`}
+                priority={i === 0}
+                unoptimized
+              />
+              {slide.caption && (
+                <div className="absolute bottom-6 w-full text-center text-white text-xl font-bold drop-shadow-lg">
+                  {slide.caption}
+                </div>
+              )}
+            </>
           )}
         </div>
       ))}

@@ -34,6 +34,7 @@ import {
   changePassword,
   changeEmail,
   changePincode,
+  convertPoints,
   AccountAction,
 } from "@/lib/data/account.data";
 import {
@@ -117,6 +118,12 @@ export default function AccountPanel() {
   const [topupPin, setTopupPin] = useState("");
   const [loadingRedeem, setLoadingRedeem] = useState(false);
 
+  // Convert Points
+  const [convertDirection, setConvertDirection] = useState<"vp2ep" | "ep2vp">("vp2ep");
+  const [convertAmount, setConvertAmount] = useState("");
+  const [convertPincode, setConvertPincode] = useState("");
+  const [loadingConvert, setLoadingConvert] = useState(false);
+
   const { config: publicConfig, loadingConfig } = usePublicConfig();
   const accountPanelOptions = [
     { label: t.account.manageAccount, value: "account" },
@@ -144,6 +151,10 @@ export default function AccountPanel() {
 
     ...(publicConfig?.features.topUp
       ? [{ label: t.account.topUpHistory, value: "topUpHistory" as const }]
+      : []),
+
+    ...((publicConfig?.gameoptions?.vp2ep?.enabled || publicConfig?.gameoptions?.ep2vp?.enabled)
+      ? [{ label: t.account.convertPoints, value: "convertPoints" as const }]
       : []),
   ];
 
@@ -534,6 +545,35 @@ export default function AccountPanel() {
     }
   }
 
+  // Convert Points
+  async function handleConvertPoints() {
+    if (!convertAmount || !convertPincode) {
+      toast.error(t.account.errors.allRequired);
+      return;
+    }
+
+    const amount = Number(convertAmount);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      toast.error(t.account.errors.invalidAmount);
+      return;
+    }
+
+    try {
+      setLoadingConvert(true);
+      const res = await convertPoints(convertDirection, amount, convertPincode);
+      toast.success(res.message);
+      setConvertAmount("");
+      setConvertPincode("");
+      // Refresh account info to show updated balance
+      const data = await fetchUserDetails();
+      setAccount(data);
+    } catch (err: any) {
+      toast.error(err.message || "Conversion failed.");
+    } finally {
+      setLoadingConvert(false);
+    }
+  }
+
   /* --------------------------------------------------
      Loading UI
   -------------------------------------------------- */
@@ -804,6 +844,95 @@ export default function AccountPanel() {
                     </TableBody>
                   </Table>
                 )}
+              </div>
+            </div>
+          </CardContent>
+        )}
+
+        {selectedOption === "convertPoints" && (
+          <CardContent>
+            <div className="flex justify-center py-6">
+              <div className="w-full max-w-md space-y-6">
+                <div className="space-y-2 text-center">
+                  <h3 className="text-lg font-semibold">{t.account.convertPoints}</h3>
+                </div>
+
+                {/* Direction selector */}
+                <div className="space-y-2">
+                  <Label>{t.account.convertDirection}</Label>
+                  <div className="flex gap-2">
+                    {publicConfig?.gameoptions?.vp2ep?.enabled && (
+                      <Button
+                        variant={convertDirection === "vp2ep" ? "default" : "outline"}
+                        onClick={() => setConvertDirection("vp2ep")}
+                      >
+                        {t.account.convertVp2Ep}
+                      </Button>
+                    )}
+                    {publicConfig?.gameoptions?.ep2vp?.enabled && (
+                      <Button
+                        variant={convertDirection === "ep2vp" ? "default" : "outline"}
+                        onClick={() => setConvertDirection("ep2vp")}
+                      >
+                        {t.account.convertEp2Vp}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Rate & minimum info */}
+                {publicConfig?.gameoptions?.[convertDirection] && (
+                  <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.account.convertMinimum}</span>
+                      <span className="font-medium">
+                        {publicConfig.gameoptions[convertDirection].min}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.account.convertRate}</span>
+                      <span className="font-medium">
+                        1 : {publicConfig.gameoptions[convertDirection].rate}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>{t.account.convertAmount}</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={convertAmount}
+                    onChange={(e) => setConvertAmount(e.target.value)}
+                  />
+                </div>
+
+                {convertAmount && Number(convertAmount) > 0 && publicConfig?.gameoptions?.[convertDirection] && (
+                  <p className="text-sm text-muted-foreground">
+                    {t.account.convertReceive}:{" "}
+                    <span className="font-semibold">
+                      {Math.floor(Number(convertAmount) * publicConfig.gameoptions[convertDirection].rate)}
+                    </span>
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  <Label>{t.account.convertPincode}</Label>
+                  <Input
+                    type="password"
+                    value={convertPincode}
+                    onChange={(e) => setConvertPincode(e.target.value)}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleConvertPoints}
+                  disabled={loadingConvert}
+                  className="w-full"
+                >
+                  {loadingConvert ? t.common.processing : t.account.convertSubmit}
+                </Button>
               </div>
             </div>
           </CardContent>

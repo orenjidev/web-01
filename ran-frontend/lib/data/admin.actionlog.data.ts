@@ -104,3 +104,72 @@ export async function getActionTypes(): Promise<string[]> {
   );
   return res.actionTypes ?? [];
 }
+
+/* =====================================================
+   GM Action Log
+===================================================== */
+
+export interface GmActionLogRow {
+  LogID: number;
+  GmUserNum: number | null;
+  GmUserID: string | null;
+  GmUserType: number | null;
+  ActionType: string;
+  HttpMethod: string | null;
+  HttpPath: string | null;
+  EntityType: string | null;
+  EntityID: string | null;
+  Description: string | null;
+  RequestBody: string | null;
+  MetadataJson: string | null;
+  IPAddress: string | null;
+  UserAgent: string | null;
+  Success: boolean;
+  ResponseStatus: number | null;
+  CreatedAt: string;
+}
+
+export interface GmActionLogFilters {
+  gmUserNum?: string;
+  actionType?: string;
+  entityType?: string;
+  entityId?: string;
+  httpMethod?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  page: number;
+  limit: number;
+}
+
+export async function getGmActionLogs(
+  filters: GmActionLogFilters,
+): Promise<{ rows: GmActionLogRow[]; pagination: ActionLogPagination }> {
+  const params = new URLSearchParams();
+
+  if (filters.gmUserNum) params.append("gmUserNum", filters.gmUserNum);
+  if (filters.actionType) params.append("actionType", filters.actionType);
+  if (filters.entityType) params.append("entityType", filters.entityType);
+  if (filters.entityId) params.append("entityId", filters.entityId);
+  if (filters.httpMethod) params.append("httpMethod", filters.httpMethod);
+  if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.append("dateTo", filters.dateTo);
+  if (filters.search) params.append("search", filters.search);
+  params.append("page", String(filters.page));
+  params.append("limit", String(filters.limit));
+
+  const res = await apiFetch<{
+    ok: boolean;
+    rows: GmActionLogRow[];
+    pagination: ActionLogPagination;
+  }>(`/api/gmtool/actionlog?${params}`);
+
+  return { rows: res.rows ?? [], pagination: res.pagination };
+}
+
+export async function getGmActionTypes(): Promise<string[]> {
+  const res = await apiFetch<{ ok: boolean; actionTypes: string[] }>(
+    "/api/gmtool/actionlog/action-types",
+  );
+  return res.actionTypes ?? [];
+}
