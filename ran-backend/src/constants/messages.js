@@ -183,6 +183,7 @@ const messages = {
       ALREADY_CLOSED: "This ticket is already closed",
 
       STATUS_UPDATED: "Ticket status updated successfully",
+      PRIORITY_UPDATED: "Ticket priority updated successfully",
       ASSIGNED: "Ticket assigned successfully",
 
       CATEGORY_LOAD_FAILED: "Failed to load ticket categories",

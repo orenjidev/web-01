@@ -325,6 +325,11 @@ router.put(
  *   - 400 Bad Request
  */
 router.put(
+  "/staff/:ticketId/priority",
+  ticketController.updateTicketPriorityController,
+);
+
+router.put(
   "/staff/:ticketId/assign",
   ticketController.assignTicketToStaffController,
 );

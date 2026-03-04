@@ -19,6 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerConfig, saveConfigSection, uploadSliderImage } from "@/lib/data/admin.config.data";
 import { usePublicConfig } from "@/context/PublicConfigContext";
+import { en as enDefault } from "@/lib/i18n/locales/en";
+import { th as thDefault } from "@/lib/i18n/locales/th";
 
 /* ─────────────────────────────
    Small helpers
@@ -831,6 +833,307 @@ function SlidesTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<vo
 }
 
 /* ─────────────────────────────
+   Section: Locales Editor
+───────────────────────────── */
+
+const BUILTIN_LOCALES: Record<string, any> = { en: enDefault, th: thDefault };
+const BUILTIN_DISPLAY_NAMES: Record<string, string> = { en: "English", th: "ภาษาไทย" };
+
+interface LocaleMeta { enabled: boolean; displayName: string }
+
+function flattenLocale(obj: any, prefix = ""): Array<{ key: string; value: string }> {
+  const pairs: Array<{ key: string; value: string }> = [];
+  for (const [k, v] of Object.entries(obj ?? {})) {
+    const fullKey = prefix ? `${prefix}.${k}` : k;
+    if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+      pairs.push(...flattenLocale(v, fullKey));
+    } else {
+      pairs.push({ key: fullKey, value: String(v ?? "") });
+    }
+  }
+  return pairs;
+}
+
+function setNestedValue(obj: any, dotKey: string, value: string): any {
+  const parts = dotKey.split(".");
+  const result = { ...obj };
+  let cur: any = result;
+  for (let i = 0; i < parts.length - 1; i++) {
+    cur[parts[i]] = { ...(cur[parts[i]] ?? {}) };
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = value;
+  return result;
+}
+
+function LocalesEditorTab({ data, onSave }: { data: any; onSave: (v: any) => Promise<void> }) {
+  // Separate locale strings from _meta
+  const [locales, setLocales] = useState<Record<string, any>>(() => {
+    const { _meta, ...rest } = data ?? {};
+    return rest;
+  });
+  const [localeMeta, setLocaleMeta] = useState<Record<string, LocaleMeta>>(() => data?._meta ?? {});
+  const [activeLang, setActiveLang] = useState<string>(() => {
+    const keys = Object.keys(data ?? {}).filter((k) => k !== "_meta");
+    return keys[0] ?? "en";
+  });
+  const [search, setSearch] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [newLangCode, setNewLangCode] = useState("");
+  const [showAddLang, setShowAddLang] = useState(false);
+  const { refresh } = usePublicConfig();
+
+  useEffect(() => {
+    const { _meta, ...rest } = data ?? {};
+    setLocales(rest);
+    setLocaleMeta(_meta ?? {});
+  }, [data]);
+
+  const langs = Object.keys(locales);
+  const currentLocale = locales[activeLang] ?? {};
+  const activeMeta = localeMeta[activeLang];
+
+  const allPairs = flattenLocale(currentLocale);
+  const filtered = search
+    ? allPairs.filter((p) =>
+        p.key.toLowerCase().includes(search.toLowerCase()) ||
+        p.value.toLowerCase().includes(search.toLowerCase())
+      )
+    : allPairs;
+
+  const grouped = filtered.reduce<Record<string, Array<{ key: string; value: string }>>>(
+    (acc, pair) => {
+      const section = pair.key.split(".")[0];
+      if (!acc[section]) acc[section] = [];
+      acc[section].push(pair);
+      return acc;
+    },
+    {}
+  );
+
+  function updatePair(key: string, value: string) {
+    setLocales((prev) => ({
+      ...prev,
+      [activeLang]: setNestedValue(currentLocale, key, value),
+    }));
+  }
+
+  function setMeta(lang: string, patch: Partial<LocaleMeta>) {
+    setLocaleMeta((prev) => ({
+      ...prev,
+      [lang]: { enabled: true, displayName: lang.toUpperCase(), ...prev[lang], ...patch },
+    }));
+  }
+
+  function importFromBuiltin(lang: string) {
+    const locale = BUILTIN_LOCALES[lang];
+    if (locale) {
+      setLocales((prev) => ({ ...prev, [lang]: locale }));
+      if (!localeMeta[lang]) {
+        setMeta(lang, { enabled: true, displayName: BUILTIN_DISPLAY_NAMES[lang] ?? lang.toUpperCase() });
+      }
+      toast.success(`Imported built-in ${lang.toUpperCase()} locale.`);
+    } else {
+      toast.error(`No built-in locale for "${lang}". Start editing from scratch.`);
+    }
+  }
+
+  function addLanguage() {
+    const code = newLangCode.trim().toLowerCase();
+    if (!code) return;
+    if (locales[code]) { toast.error(`Language "${code}" already exists.`); return; }
+    const seed = BUILTIN_LOCALES[code] ?? locales["en"] ?? Object.values(locales)[0] ?? {};
+    setLocales((prev) => ({ ...prev, [code]: seed }));
+    setMeta(code, { enabled: true, displayName: BUILTIN_DISPLAY_NAMES[code] ?? code.toUpperCase() });
+    setActiveLang(code);
+    setShowAddLang(false);
+    setNewLangCode("");
+    toast.success(`Added language "${code.toUpperCase()}".`);
+  }
+
+  function removeLanguage(lang: string) {
+    if (lang === "en") { toast.error("Cannot remove the English locale."); return; }
+    setLocales((prev) => { const next = { ...prev }; delete next[lang]; return next; });
+    setLocaleMeta((prev) => { const next = { ...prev }; delete next[lang]; return next; });
+    if (activeLang === lang) setActiveLang("en");
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave({ _meta: localeMeta, ...locales });
+      await refresh();
+      toast.success("Locales saved.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const hasCurrentLocale = !!locales[activeLang];
+
+  return (
+    <div className="space-y-4">
+      {/* Language tabs */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {langs.map((lang) => {
+          const meta = localeMeta[lang];
+          const isEnabled = meta?.enabled !== false;
+          return (
+            <div key={lang} className="flex items-center gap-0.5">
+              <button
+                onClick={() => setActiveLang(lang)}
+                className={`px-3 py-1 rounded-l text-xs font-medium transition-colors ${
+                  activeLang === lang
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted hover:bg-muted/80 text-foreground"
+                } ${!isEnabled ? "opacity-50" : ""}`}
+                title={!isEnabled ? `${lang.toUpperCase()} (disabled)` : lang.toUpperCase()}
+              >
+                {lang.toUpperCase()}
+                {!isEnabled && <span className="ml-1 text-[9px] opacity-70">OFF</span>}
+              </button>
+              {lang !== "en" && (
+                <button
+                  onClick={() => removeLanguage(lang)}
+                  className={`px-1.5 py-1 rounded-r text-xs transition-colors ${
+                    activeLang === lang
+                      ? "bg-primary/70 text-primary-foreground hover:bg-destructive"
+                      : "bg-muted hover:bg-destructive hover:text-destructive-foreground text-muted-foreground"
+                  }`}
+                  title={`Remove ${lang.toUpperCase()}`}
+                >
+                  ✕
+                </button>
+              )}
+              {lang === "en" && (
+                <span className="px-1 py-1 rounded-r bg-muted text-xs text-transparent select-none">✕</span>
+              )}
+            </div>
+          );
+        })}
+
+        {showAddLang ? (
+          <div className="flex items-center gap-1">
+            <Input
+              className="h-7 text-xs w-20"
+              placeholder="e.g. ph"
+              value={newLangCode}
+              onChange={(e) => setNewLangCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addLanguage();
+                if (e.key === "Escape") { setShowAddLang(false); setNewLangCode(""); }
+              }}
+              autoFocus
+            />
+            <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={addLanguage}>Add</Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => { setShowAddLang(false); setNewLangCode(""); }}>✕</Button>
+          </div>
+        ) : (
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setShowAddLang(true)}>
+            <Plus className="h-3 w-3" /> Add Language
+          </Button>
+        )}
+      </div>
+
+      {/* Active language settings bar */}
+      {langs.length > 0 && (
+        <div className="flex items-center gap-4 p-2.5 rounded-lg bg-muted/40 border border-border text-xs">
+          <div className="flex items-center gap-2 shrink-0">
+            <Switch
+              checked={activeMeta?.enabled !== false}
+              onCheckedChange={(v) => setMeta(activeLang, { enabled: v })}
+              disabled={activeLang === "en"}
+            />
+            <span className="text-muted-foreground">
+              {activeLang === "en"
+                ? "English is always enabled"
+                : activeMeta?.enabled !== false
+                  ? "Visible to users in language switcher"
+                  : "Hidden from users (draft mode)"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-muted-foreground shrink-0">Display name:</span>
+            <Input
+              className="h-6 text-xs flex-1 max-w-40"
+              placeholder={activeLang.toUpperCase()}
+              value={activeMeta?.displayName ?? ""}
+              onChange={(e) => setMeta(activeLang, { displayName: e.target.value })}
+            />
+            <span className="text-[10px] text-muted-foreground">shown in the language switcher</span>
+          </div>
+        </div>
+      )}
+
+      {/* Seed / search bar */}
+      {!hasCurrentLocale ? (
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground flex-1">
+            No locale data for <strong>{activeLang.toUpperCase()}</strong>.
+          </p>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => importFromBuiltin(activeLang)}>
+            Import Built-in Defaults
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <Input
+            className="h-7 text-xs flex-1 max-w-sm"
+            placeholder="Search keys or values…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => importFromBuiltin(activeLang)}>
+            Re-import Defaults
+          </Button>
+          <span className="text-xs text-muted-foreground shrink-0">{filtered.length} strings</span>
+        </div>
+      )}
+
+      {/* Key-value editor */}
+      {hasCurrentLocale && (
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
+          {Object.entries(grouped).map(([section, pairs]) => (
+            <div key={section}>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-1.5 sticky top-0 bg-card py-0.5 z-10">
+                {section}
+              </p>
+              <div className="space-y-1">
+                {pairs.map(({ key, value }) => {
+                  const displayKey = key.slice(section.length + 1) || key;
+                  return (
+                    <div key={key} className="flex items-center gap-2">
+                      <span
+                        className="text-[11px] text-muted-foreground font-mono w-56 shrink-0 truncate"
+                        title={key}
+                      >
+                        {displayKey}
+                      </span>
+                      <Input
+                        className="flex-1 text-xs h-7"
+                        value={value}
+                        onChange={(e) => updatePair(key, e.target.value)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {Object.keys(grouped).length === 0 && (
+            <p className="text-xs text-muted-foreground py-4 text-center">No matching keys.</p>
+          )}
+        </div>
+      )}
+
+      <SaveBar onSave={handleSave} saving={saving} />
+    </div>
+  );
+}
+
+/* ─────────────────────────────
    Main ConfigSection component
 ───────────────────────────── */
 
@@ -879,6 +1182,7 @@ export function ConfigSection() {
           <TabsTrigger value="character">Character</TabsTrigger>
           <TabsTrigger value="economy">Economy</TabsTrigger>
           <TabsTrigger value="display">Display</TabsTrigger>
+          <TabsTrigger value="locales">Locales</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-0 grid grid-cols-2 gap-4">
@@ -927,6 +1231,21 @@ export function ConfigSection() {
           <Card className="col-span-2">
             <CardHeader><CardTitle className="text-sm">Currency Convert</CardTitle></CardHeader>
             <CardContent><ConvertTab data={config.convertfeature ?? {}} onSave={makeSaver("convertfeature")} /></CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="locales" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Locale Strings Editor</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Edit UI text for each language. Changes take effect immediately after saving — no rebuild required.
+                Use "Import Built-in Defaults" to seed from the static locale files.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <LocalesEditorTab data={config.locales ?? {}} onSave={makeSaver("locales")} />
+            </CardContent>
           </Card>
         </TabsContent>
 

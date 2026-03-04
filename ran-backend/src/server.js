@@ -1,3 +1,9 @@
+import * as Sentry from "@sentry/node";
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 1.0 });
+}
+
 import { app } from "./app.js";
 import { GlobalConfig } from "./config/global.config.js";
 import { setupWebPoolTables } from "./services/setup.service.js";

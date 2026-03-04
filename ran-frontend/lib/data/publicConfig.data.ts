@@ -20,6 +20,9 @@ export interface PublicConfig {
     rows: { component: string; min: string; rec: string }[];
   };
 
+  locales: Record<string, Record<string, any>> | null;
+  enabledLocales: Array<{ code: string; displayName: string }>;
+
   features: {
     changePassword: boolean;
     changePin: boolean;

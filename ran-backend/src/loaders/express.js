@@ -56,7 +56,7 @@ export function createExpressApp() {
   app.use(
     session({
       name: process.env.COOKIE,
-      secret: "dev-secret-change-later",
+      secret: process.env.SESSION_SECRET || "dev-secret-change-later",
       resave: false,
       saveUninitialized: false,
       cookie: {

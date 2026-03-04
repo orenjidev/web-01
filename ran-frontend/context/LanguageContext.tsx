@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { translations, SupportedLanguage, Translations } from "@/lib/i18n";
 import { usePublicConfig } from "@/context/PublicConfigContext";
 
@@ -16,20 +16,28 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const { config } = usePublicConfig();
   const [lang, setLangState] = useState<SupportedLanguage>("en");
 
+  // DB locales (when set by admin) take precedence over static locale files at runtime
+  const runtimeTranslations = useMemo(() => {
+    if (!config?.locales) return translations;
+    return { ...translations, ...config.locales } as typeof translations;
+  }, [config?.locales]);
+
   useEffect(() => {
     const stored = localStorage.getItem("ran_lang") as SupportedLanguage | null;
     const serverDefault = (config?.defaultLanguage ?? "en") as SupportedLanguage;
-    const resolved = stored && translations[stored] ? stored : serverDefault;
+    const resolved = stored && runtimeTranslations[stored] ? stored : serverDefault;
     setLangState(resolved);
-  }, [config]);
+  }, [config, runtimeTranslations]);
 
   function setLang(l: SupportedLanguage) {
     setLangState(l);
     localStorage.setItem("ran_lang", l);
   }
 
+  const currentT = (runtimeTranslations[lang] ?? runtimeTranslations.en) as Translations;
+
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t: translations[lang] }}>
+    <LanguageContext.Provider value={{ lang, setLang, t: currentT }}>
       {children}
     </LanguageContext.Provider>
   );

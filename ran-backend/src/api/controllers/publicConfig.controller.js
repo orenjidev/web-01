@@ -35,6 +35,37 @@ export function getPublicConfig(req, res) {
       rows: baseServerConfig.systemRequirements?.rows ?? [],
     },
 
+    ...(() => {
+      const raw = baseServerConfig.locales;
+      if (!raw) {
+        return {
+          locales: null,
+          enabledLocales: [
+            { code: "en", displayName: "English" },
+            { code: "th", displayName: "ภาษาไทย" },
+          ],
+        };
+      }
+      const { _meta = {}, ...localeData } = raw;
+      const hasMeta = Object.keys(_meta).length > 0;
+      const enabledLocales = hasMeta
+        ? Object.entries(_meta)
+            .filter(([, m]) => m.enabled !== false)
+            .map(([code, m]) => ({ code, displayName: m.displayName ?? code.toUpperCase() }))
+        : Object.keys(localeData).map((code) => ({
+            code,
+            displayName: code === "en" ? "English" : code === "th" ? "ภาษาไทย" : code.toUpperCase(),
+          }));
+      const filteredLocales = {};
+      for (const { code } of enabledLocales) {
+        if (localeData[code]) filteredLocales[code] = localeData[code];
+      }
+      return {
+        locales: Object.keys(filteredLocales).length > 0 ? filteredLocales : null,
+        enabledLocales,
+      };
+    })(),
+
     gameoptions: {
       changeSchool: {
         enabled: baseServerConfig.changeSchool.enabled,

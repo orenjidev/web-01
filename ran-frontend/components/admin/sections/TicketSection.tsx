@@ -18,6 +18,7 @@ import {
   staffReply,
   getStaffList,
   assignTicket,
+  updateTicketPriority,
   type StaffTicketRow,
   type StaffTicketFull,
   type StaffListItem,
@@ -43,8 +44,11 @@ function statusBadge(status: string) {
     default: return "bg-amber-500/10 text-amber-500 border-amber-500/20";
   }
 }
+const PRIORITY_ORDER: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+
 function priorityBadge(priority: string) {
   switch (priority?.toLowerCase()) {
+    case "critical": return "text-purple-500";
     case "high": return "text-red-500";
     case "medium": return "text-amber-500";
     default: return "text-muted-foreground";
@@ -304,6 +308,20 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
     }
   }
 
+  async function handlePriority(val: string) {
+    setActionLoading(true);
+    try {
+      await updateTicketPriority(ticketId, val);
+      toast.success(`Priority set to ${val}.`);
+      setFull(await getStaffTicketFull(ticketId));
+      onStatusChange();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed.");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   async function handleAssign(val: string) {
     const staffUserNum = val === "none" ? null : Number(val);
     setActionLoading(true);
@@ -347,7 +365,7 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
                 <span>{new Date(ticket.CreatedAt).toLocaleString()}</span>
                 {ticket.AssignedToStaffUserNum && (
                   <span className="text-amber-500">
-                    Assigned: #{ticket.AssignedToStaffUserNum}
+                    Assigned: {ticket.AssignedStaffUserID ?? `#${ticket.AssignedToStaffUserNum}`}
                   </span>
                 )}
               </div>
@@ -362,6 +380,22 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
                 onClick={() => toggleSidebar("character")} title="User characters">
                 Characters
               </Button>
+
+              <Select
+                value={ticket.Priority ?? "Low"}
+                onValueChange={handlePriority}
+                disabled={actionLoading}
+              >
+                <SelectTrigger className={`h-7 text-xs w-28 ${priorityBadge(ticket.Priority)}`}>
+                  <SelectValue placeholder="Priority…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
 
               {staffList.length > 0 && (
                 <Select
@@ -580,6 +614,8 @@ export function TicketSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"date" | "priority">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   // Fingerprint: TicketID → UpdatedAt (for change detection)
@@ -647,34 +683,64 @@ export function TicketSection() {
     return () => clearInterval(interval);
   }, []);
 
-  const filtered = statusFilter === "all"
-    ? tickets
-    : tickets.filter((t) => t.Status === statusFilter);
+  const filtered = (statusFilter === "all" ? tickets : tickets.filter((t) => t.Status === statusFilter))
+    .slice()
+    .sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "date") {
+        cmp = new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime();
+      } else {
+        const pa = PRIORITY_ORDER[a.Priority?.toLowerCase()] ?? 0;
+        const pb = PRIORITY_ORDER[b.Priority?.toLowerCase()] ?? 0;
+        cmp = pa - pb;
+      }
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
 
   return (
     <div className="flex h-[calc(100vh-8rem)] rounded-xl border border-border overflow-hidden bg-card">
 
       {/* Left: ticket list */}
       <div className="w-72 shrink-0 flex flex-col border-r border-border">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2 shrink-0">
-          <h2 className="font-semibold text-sm">Support Tickets</h2>
+        <div className="px-4 py-3 border-b border-border flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-sm">Support Tickets</h2>
+            <div className="flex items-center gap-1">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={load} title="Refresh">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                  <path d="M21 3v5h-5" />
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                  <path d="M8 16H3v5" />
+                </svg>
+              </Button>
+            </div>
+          </div>
           <div className="flex items-center gap-1">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as "date" | "priority")}>
+              <SelectTrigger className="h-6 text-[11px] flex-1"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="Open">Open</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Closed">Closed</SelectItem>
+                <SelectItem value="date">By Date</SelectItem>
+                <SelectItem value="priority">By Priority</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={load} title="Refresh">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                <path d="M8 16H3v5" />
-              </svg>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 text-xs"
+              title={sortOrder === "desc" ? "Descending" : "Ascending"}
+              onClick={() => setSortOrder((o) => o === "desc" ? "asc" : "desc")}
+            >
+              {sortOrder === "desc" ? "↓" : "↑"}
             </Button>
           </div>
         </div>

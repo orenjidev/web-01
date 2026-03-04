@@ -47,6 +47,7 @@ export interface TicketDetail {
   CreatedAt: string;
   UpdatedAt: string;
   AssignedToStaffUserNum: number | null;
+  AssignedStaffUserID?: string | null;
   attachments?: TicketAttachment[];
 }
 
@@ -145,6 +146,16 @@ export async function getStaffList(): Promise<StaffListItem[]> {
     "/api/tickets/staff/list",
   );
   return res.staff ?? [];
+}
+
+export async function updateTicketPriority(
+  ticketId: number,
+  priority: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/tickets/staff/${ticketId}/priority`, {
+    method: "PUT",
+    body: JSON.stringify({ priority }),
+  });
 }
 
 export async function assignTicket(

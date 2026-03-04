@@ -19,6 +19,7 @@ const DB_SECTIONS = [
   "social",
   "sliderConfig",
   "systemRequirements",
+  "locales",
 ];
 
 const CREATE_TABLE_SQL = `

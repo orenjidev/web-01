@@ -1,6 +1,7 @@
 import { getUserPool, getWebPool } from "../loaders/mssql.js";
 import { getMessage } from "../constants/messages.js";
 import { logAction } from "./actionlog.service.js";
+import { groupRepliesWithAttachments } from "./ticket/ticket.transforms.js";
 
 /* =====================================================
    Helpers
@@ -236,37 +237,10 @@ export const getTicketDetails = async (ticketId, ctx = {}) => {
       ORDER BY r.CreatedAt ASC
     `);
 
-  // Group reply attachments
-  const repliesMap = {};
-
-  for (const row of repliesResult.recordset) {
-    if (!repliesMap[row.ReplyID]) {
-      repliesMap[row.ReplyID] = {
-        ReplyID: row.ReplyID,
-        UserNum: row.UserNum,
-        Message: row.Message,
-        IsStaffReply: row.IsStaffReply,
-        CreatedAt: row.CreatedAt,
-        ReplyUserID: row.ReplyUserID ?? null,
-        attachments: [],
-      };
-    }
-
-    if (row.AttachmentID) {
-      repliesMap[row.ReplyID].attachments.push({
-        AttachmentID: row.AttachmentID,
-        FileName: row.FileName,
-        FilePath: row.FilePath,
-        FileSize: row.FileSize,
-        FileType: row.FileType,
-      });
-    }
-  }
-
   return {
     ok: true,
     ticket: ticketResult.recordset[0],
-    replies: Object.values(repliesMap),
+    replies: groupRepliesWithAttachments(repliesResult.recordset),
     attachments: attachmentsResult.recordset,
   };
 };
@@ -400,9 +374,11 @@ export const getTicketDetailsStaff = async (ticketId, ctx = {}) => {
   const pool = await getWebPool();
 
   const result = await pool.request().input("TicketID", ticketId).query(`
-      SELECT *
-      FROM dbo.Tickets
-      WHERE TicketID = @TicketID
+      SELECT t.*, u.UserID AS AssignedStaffUserID
+      FROM dbo.Tickets t
+      LEFT JOIN [${process.env.DB_NAME_USER}].dbo.UserInfo u
+        ON t.AssignedToStaffUserNum = u.UserNum
+      WHERE t.TicketID = @TicketID
     `);
 
   if (result.recordset.length === 0) {
@@ -440,34 +416,10 @@ export const getTicketDetailsStaff = async (ticketId, ctx = {}) => {
       ORDER BY r.CreatedAt ASC
     `);
 
-  const repliesMap = {};
-  for (const row of repliesResult.recordset) {
-    if (!repliesMap[row.ReplyID]) {
-      repliesMap[row.ReplyID] = {
-        ReplyID: row.ReplyID,
-        UserNum: row.UserNum,
-        Message: row.Message,
-        IsStaffReply: row.IsStaffReply,
-        CreatedAt: row.CreatedAt,
-        ReplyUserID: row.ReplyUserID ?? null,
-        attachments: [],
-      };
-    }
-    if (row.AttachmentID) {
-      repliesMap[row.ReplyID].attachments.push({
-        AttachmentID: row.AttachmentID,
-        FileName: row.FileName,
-        FilePath: row.FilePath,
-        FileSize: row.FileSize,
-        FileType: row.FileType,
-      });
-    }
-  }
-
   return {
     ok: true,
     ticket: result.recordset[0],
-    replies: Object.values(repliesMap),
+    replies: groupRepliesWithAttachments(repliesResult.recordset),
     attachments: ticketAttachmentsResult.recordset,
   };
 };
@@ -503,6 +455,40 @@ export const updateTicketStatus = async (ticketId, body, ctx = {}) => {
   });
 
   return { ok: true, message: MSG.TICKET.STATUS_UPDATED };
+};
+
+export const updateTicketPriority = async (ticketId, body, ctx = {}) => {
+  const MSG = getMessage(ctx.lang);
+
+  if (!(await isStaffUser(ctx.user.userNum))) {
+    return { ok: false, message: MSG.AUTH.STAFF_REQUIRED };
+  }
+
+  const validPriorities = ["Low", "Medium", "High", "Critical"];
+  if (!body?.priority || !validPriorities.includes(body.priority)) {
+    return { ok: false, message: MSG.TICKET.INVALID_PRIORITY };
+  }
+
+  const pool = await getWebPool();
+
+  await pool.request().input("TicketID", ticketId).input("Priority", body.priority)
+    .query(`
+      UPDATE dbo.Tickets
+      SET Priority = @Priority, UpdatedAt = GETDATE()
+      WHERE TicketID = @TicketID
+    `);
+
+  await logAction({
+    userId: ctx.user?.userNum ?? null,
+    actionType: "UPDATE",
+    entityType: "TICKET",
+    entityId: ticketId,
+    description: `Updated ticket priority to ${body.priority}`,
+    ipAddress: ctx.ip,
+    userAgent: ctx.userAgent,
+  });
+
+  return { ok: true, message: MSG.TICKET.PRIORITY_UPDATED };
 };
 
 export const assignTicketToStaff = async (ticketId, body, ctx = {}) => {

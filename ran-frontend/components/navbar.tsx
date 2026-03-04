@@ -64,15 +64,23 @@ const NavBar = () => {
 
             {/* Auth Section */}
             <div className="flex items-center gap-2">
-              {/* Language toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLang(lang === "en" ? "th" : "en")}
-                className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2"
-              >
-                {lang === "en" ? "TH" : "EN"}
-              </Button>
+              {/* Language switcher — cycles through admin-enabled locales */}
+              {(config?.enabledLocales?.length ?? 0) > 1 && (() => {
+                const langs = config!.enabledLocales;
+                const idx = langs.findIndex((l) => l.code === lang);
+                const next = langs[(idx + 1) % langs.length];
+                return (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLang(next.code as Parameters<typeof setLang>[0])}
+                    className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2"
+                    title={`Switch to ${next.displayName}`}
+                  >
+                    {next.displayName}
+                  </Button>
+                );
+              })()}
 
               {loading ? null : !user ? (
                 <>

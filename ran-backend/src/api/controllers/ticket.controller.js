@@ -151,6 +151,22 @@ export const updateTicketStatusController = async (req, res) => {
   return res.json(result);
 };
 
+export const updateTicketPriorityController = async (req, res) => {
+  if (!requireTicketSystemEnabled(req, res)) return;
+
+  const result = await ticketService.updateTicketPriority(
+    req.params.ticketId,
+    req.body,
+    req.ctx,
+  );
+
+  if (!result.ok) {
+    return res.status(400).json(result);
+  }
+
+  return res.json(result);
+};
+
 export const assignTicketToStaffController = async (req, res) => {
   if (!requireTicketSystemEnabled(req, res)) return;
 
