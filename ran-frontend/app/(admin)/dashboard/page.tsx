@@ -69,6 +69,7 @@ import { DownloadSection } from "@/components/admin/sections/DownloadSection";
 import { ConfigSection } from "@/components/admin/sections/ConfigSection";
 import { ActionLogSection } from "@/components/admin/sections/ActionLogSection";
 import { ShopAnalyticsSection } from "@/components/admin/sections/ShopAnalyticsSection";
+import { BuildItemsSection } from "@/components/admin/sections/BuildItemsSection";
 import { usePolling } from "@/hooks/usePolling";
 
 /* =====================================================
@@ -103,6 +104,7 @@ const SECTION_LABELS: Record<AdminSection, string> = {
   "server.config": "Server Configuration",
   "logs.user": "User Action Log",
   "logs.gm": "GM Action Log",
+  "tools.buildItems": "Build Items",
 };
 
 /* =====================================================
@@ -643,6 +645,7 @@ export default function DashboardPage() {
           {activeSection === "news" && <NewsSection />}
           {activeSection === "downloads" && <DownloadSection />}
           {activeSection === "server.config" && <ConfigSection />}
+          {activeSection === "tools.buildItems" && <BuildItemsSection />}
           {activeSection === "logs.user" && <ActionLogSection defaultTab="user" />}
           {activeSection === "logs.gm" && <ActionLogSection defaultTab="gm" />}
         </div>

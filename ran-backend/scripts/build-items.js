@@ -10,8 +10,8 @@ const INPUT = path.resolve("data/items/Item.csv");
 const OUTPUT = path.resolve("generated/items.web.json");
 const ENCODING = "latin1";
 
-const ADDON_SIZE = 5;
-const ITEM_SIZE = 30; // ✅ MATCHES SERVER (SBOX)
+const ITEM_SIZE = 30;
+const BOX_SIZE = 30;
 
 /* ======================================================
    HELPERS
@@ -29,31 +29,22 @@ const toFloat = (v) => {
 
 const toBool = (v) => v === "1" || v === 1 || v === true;
 
-const get = (row, map, key, def = 0) => {
-  const k = normalizeHeader(key);
-  return map[k] !== undefined ? row[map[k]] : def;
-};
-
 const normalizeHeader = (h) => h.replace(/\s+/g, " ").trim();
 
-/* ======================================================
-   ITEM FLAGS
-====================================================== */
+/** Returns raw cell value or undefined if column is missing from CSV */
+const get = (row, map, key) => {
+  const k = normalizeHeader(key);
+  return map[k] !== undefined ? row[map[k]] : undefined;
+};
 
-function decodeItemFlags(dwFlags) {
-  return {
-    canSellToNPC: (dwFlags & 0x01) !== 0,
-    canTrade: (dwFlags & 0x02) !== 0,
-    canDrop: (dwFlags & 0x04) !== 0,
-    isEventItem: (dwFlags & 0x08) !== 0,
-    isCostume: (dwFlags & 0x10) !== 0,
-    isTimeLimited: (dwFlags & 0x20) !== 0,
-    canWrap: (dwFlags & 0x200) !== 0,
-    canDismantle: (dwFlags & 0x400) !== 0,
-    restricted: (dwFlags & 0x100) !== 0,
-    canSendPost: (dwFlags & 0x1600) !== 0,
-  };
-}
+/** Check whether a header (or any of its aliases) exists in the CSV */
+const has = (map, ...keys) => keys.some((k) => normalizeHeader(k) in map);
+
+const getStr = (row, map, key) => {
+  const v = get(row, map, key);
+  if (v === undefined) return "";
+  return typeof v === "string" ? v.trim() : String(v).trim();
+};
 
 /* ======================================================
    ITEM TYPE MAP
@@ -200,296 +191,171 @@ const resolveItemType = (id) => ({
 });
 
 /* ======================================================
-   ITEM DRUG MAP
+   ITEM FLAGS
 ====================================================== */
 
-const ITEM_DRUG_LABELS = [
-  "None",
-  "HP Recovery",
-  "MP Recovery",
-  "SP Recovery",
-  "HP+MP Recovery",
-  "HP+SP Recovery",
-  "HP+MP+SP Recovery",
-  "Abnormal Condition Cure",
-  "Return to Campus",
-  "Recall StartPoint Position",
-  "Recall BackPoint Position",
-  "Revive",
-  "HP Recovery+Abnormal Condition Cure",
-  "HP+MP+SP Recovery+Abnormal Condition Cure",
-  "Teleport to Special Map",
-  "Get Combat Point",
-  "Stage Pass",
-  "Instance Dungeon Reload Card",
-  "Attribute Recovery",
-  "Costume Blessed Paper",
-  "Debuff Effect",
-  "Terminate Paper",
-  "EXP Compressor (10 billion)",
-  "EXP Compressor (100 billion)",
-  "EXP Capsule (10 billion)",
-  "EXP Capsule (100 billion)",
-  "Temporary Enhancer",
-  "Macro Duration Recharger",
-  "Duration Extension",
-];
-
-const resolveDrug = (id) => ({
-  id,
-  label: ITEM_DRUG_LABELS[id] ?? "Unknown Drug",
-});
-
-/* ======================================================
-   SUIT / ADDON / VAR / VOLUME / BLOW MAPS
-====================================================== */
-
-const SUIT_TYPE_MAP = [
-  "HeadGear(Hats)",
-  "UpperBody(Coat/Jacket)",
-  "LowerBody(Pant/Skirt)",
-  "Hand(Gloves)",
-  "Foot(Shoes)",
-  "Handheld(Weapon)",
-  "Necklace",
-  "Bracelet",
-  "Ring",
-  "Pet A",
-  "Pet B",
-  "Vehicle",
-  "Vehicle Skin",
-  "Vehicle Parts A",
-  "Vehicle Parts B",
-  "Vehicle Parts C",
-  "Vehicle Parts D",
-  "Vehicle Parts E",
-  "Vehicle Parts F",
-  "Belt",
-  "Earring",
-  "Accessory",
-  "Ornament",
-  "Rune",
-  "Artifact",
-  "Jewel",
-];
-
-const ADDON_TYPE_MAP = [
-  "None",
-  "Hit Rate",
-  "Avoid Rate",
-  "Attack",
-  "Defense",
-  "Maximum HP",
-  "Maximum MP",
-  "Maximum SP",
-  "Stats POW",
-  "Stats STR",
-  "Stats SPI",
-  "Stats DEX",
-  "Stats INT",
-  "Stats STM",
-  "Melee",
-  "Missile",
-  "Energy",
-];
-
-const VAR_LABEL_MAP = [
-  "None",
-  "HP Recover %",
-  "MP Recover %",
-  "SP Recover %",
-  "HP+MP+SP Recover %",
-  "Move Speed %",
-  "Attack Speed %",
-  "Critical Rate %",
-  "Crushing Blow %",
-  "Boss Damage Reduction",
-  "Boss Fixed Damage",
-  "Crit vs Mob Emergency",
-  "Crit vs Boss Emergency",
-  "Emergency Damage Reduction",
-  "EXP Gain %",
-  "Money Drop %",
-  "Melee Damage Reduction %",
-  "Ranged Damage Reduction %",
-  "Magic Damage Reduction %",
-  "HP Solo",
-  "HP Party",
-  "Atk Speed Solo",
-  "Atk Speed Party",
-];
-
-const VAR_SCALE = [
-  1, 100, 100, 100, 100, 100, 100, 100, 100, 100, 1, 100, 100, 1, 100, 100, 100,
-  100, 100, 1, 1, 100, 100,
-];
-
-const BLOW_TYPE_MAP = [
-  "None",
-  "Numb",
-  "Stun",
-  "Stone",
-  "Burn",
-  "Frozen",
-  "Mad",
-  "Poison",
-  "Curse",
-];
-
-/* ======================================================
-   RESOLVERS
-====================================================== */
-
-const resolveSuitType = (id) => ({
-  id,
-  label: SUIT_TYPE_MAP[id] ?? "Unknown Suit",
-});
-
-const resolveAddon = (id, value) => ({
-  type: { id, label: ADDON_TYPE_MAP[id] ?? "Unknown Addon" },
-  value,
-});
-
-const resolveVar = (id, raw) => {
-  const scale = VAR_SCALE[id] ?? 1;
+function decodeItemFlags(dwFlags) {
   return {
-    type: {
-      id,
-      label: VAR_LABEL_MAP[id] ?? "Unknown Var",
-      unit: scale === 100 ? "%" : "value",
-    },
-    value: scale === 100 ? raw * scale : raw,
+    canSellToNPC: (dwFlags & 0x01) !== 0,
+    canTrade: (dwFlags & 0x02) !== 0,
+    canDrop: (dwFlags & 0x04) !== 0,
+    isEventItem: (dwFlags & 0x08) !== 0,
+    isCostume: (dwFlags & 0x10) !== 0,
+    isTimeLimited: (dwFlags & 0x20) !== 0,
+    canWrap: (dwFlags & 0x200) !== 0,
+    canDismantle: (dwFlags & 0x400) !== 0,
+    restricted: (dwFlags & 0x100) !== 0,
+    canSendPost: (dwFlags & 0x1600) !== 0,
   };
-};
-
-const resolveVolume = resolveVar;
-
-const resolveBlow = (id, rate, life, v1, v2) => ({
-  type: { id, label: BLOW_TYPE_MAP[id] ?? "Unknown Status" },
-  chance: rate,
-  duration: life,
-  params: { value1: v1, value2: v2 },
-});
+}
 
 /* ======================================================
-   PARSERS
+   DYNAMIC PARSER — adapts to whatever columns the CSV has
 ====================================================== */
 
-function parseItem(row, map) {
-  const main = toInt(get(row, map, "sNativeID wMainID"));
-  const sub = toInt(get(row, map, "sNativeID wSubID"));
-
+/**
+ * Detects which column groups exist in the header and returns
+ * a set of feature flags so parseRow only extracts what's present.
+ */
+function detectFeatures(map) {
   return {
-    itemId: `${main}-${sub}`,
-    name: get(row, map, "strName"),
-    level: toInt(get(row, map, "emLevel")),
-    type: resolveItemType(toInt(get(row, map, "emItemType"))),
+    hasId: has(map, "sNativeID wMainID"),
+    hasName: has(map, "strName"),
+    hasLevel: has(map, "emLevel"),
+    hasType: has(map, "emItemType", "emType"),
+    hasGrade: has(map, "wGradeAttack") || has(map, "wGradeDefense"),
+    hasIcon: has(map, "sICONID wMainID"),
+    hasEffects:
+      has(map, "strSelfBodyEffect") ||
+      has(map, "strTargBodyEffect") ||
+      has(map, "strTargetEffect") ||
+      has(map, "strGeneralEffect"),
+    hasFiles: has(map, "strFieldFile") || has(map, "strInventoryFile"),
+    hasArrInv: has(map, "strArrInventoryFile 0"),
+    hasWearing: has(map, "strWearingFile 0"),
+    hasWearingEx: has(map, "strWearingFileEx 0"),
+    hasBox: has(map, "sITEMS 0 nidITEM wMainID"),
+    hasRandomBox: has(map, "vecBOX 0 nidITEM wMainID"),
+    hasFlags: has(map, "dwFlags"),
+    hasShowContents: has(map, "Show Contents"),
+  };
+}
 
-    grade: {
+function parseRow(row, map, feat) {
+  const main = feat.hasId ? toInt(get(row, map, "sNativeID wMainID")) : 0;
+  const sub = feat.hasId ? toInt(get(row, map, "sNativeID wSubID")) : 0;
+
+  const item = { itemId: `${main}-${sub}` };
+
+  if (feat.hasName) item.name = getStr(row, map, "strName");
+  if (feat.hasLevel) item.level = toInt(get(row, map, "emLevel"));
+  if (feat.hasFlags) item.flags = decodeItemFlags(toInt(get(row, map, "dwFlags")));
+
+  if (feat.hasType) {
+    const raw = get(row, map, "emItemType") ?? get(row, map, "emType");
+    item.type = resolveItemType(toInt(raw));
+  }
+
+  if (feat.hasGrade) {
+    item.grade = {
       attack: toInt(get(row, map, "wGradeAttack")),
       defense: toInt(get(row, map, "wGradeDefense")),
-    },
-
-    price: {
-      buy: toInt(get(row, map, "llBuyPrice")),
-      sell: toInt(get(row, map, "llSellPrice")),
-      tradeRP: toInt(get(row, map, "nRPTrade")),
-    },
-
-    flags: decodeItemFlags(toInt(get(row, map, "dwFlags"))),
-    inventoryFile: get(row, map, "strInventoryFile"),
-    sIconMainID: get(row, map, "sICONID wMainID"),
-    sIconSubID: get(row, map, "sICONID wSubID"),
-    searchable: toBool(get(row, map, "bSearch")),
-  };
-}
-
-function parseSuit(row, map) {
-  const suitId = toInt(get(row, map, "emSuit"));
-  if (!suitId) return null;
-
-  const addons = [];
-  for (let i = 0; i < ADDON_SIZE; i++) {
-    const t = toInt(get(row, map, `sADDON ${i} emTYPE`));
-    const v = toInt(get(row, map, `sADDON ${i} nVALUE`));
-    if (t) addons.push(resolveAddon(t, v));
+    };
   }
 
-  const varId = toInt(get(row, map, "sVARIATE emTYPE"));
-  const volId = toInt(get(row, map, "sVOLUME emTYPE"));
-  const blowId = toInt(get(row, map, "sBLOW emTYPE"));
-
-  return {
-    suitType: resolveSuitType(suitId),
-    addons,
-
-    variate: varId
-      ? resolveVar(varId, toFloat(get(row, map, "sVARIATE fVariate")))
-      : undefined,
-    volume: volId
-      ? resolveVolume(volId, toFloat(get(row, map, "sVOLUME fVolume")))
-      : undefined,
-
-    blow: blowId
-      ? resolveBlow(
-          blowId,
-          toFloat(get(row, map, "sBLOW fRATE")),
-          toFloat(get(row, map, "sBLOW fLIFE")),
-          toFloat(get(row, map, "sBLOW fVAR1")),
-          toFloat(get(row, map, "sBLOW fVAR2")),
-        )
-      : undefined,
-
-    changeColor: toBool(get(row, map, "bChangeColor")),
-  };
-}
-
-function parseDrug(row, map) {
-  const drugId = toInt(get(row, map, "emDrug"));
-  if (!drugId) return null;
-
-  return {
-    type: resolveDrug(drugId),
-    timeLimit: toInt(get(row, map, "tTIME_LMT")),
-    pileNum: toInt(get(row, map, "wPileNum")),
-    duration: toInt(get(row, map, "tDuration")),
-  };
-}
-
-function parseBox(row, map) {
-  const items = [];
-
-  for (let i = 0; i < ITEM_SIZE; i++) {
-    const main = toInt(get(row, map, `sITEMS ${i} nidITEM wMainID`));
-    const sub = toInt(get(row, map, `sITEMS ${i} nidITEM wSubID`));
-    const amount = toInt(get(row, map, `sITEMS ${i} dwAMOUNT`));
-
-    if (!main && !sub) continue;
-
-    items.push({
-      itemId: `${main}-${sub}`,
-      amount,
-    });
+  if (feat.hasIcon) {
+    item.icon = {
+      main: toInt(get(row, map, "sICONID wMainID")),
+      sub: toInt(get(row, map, "sICONID wSubID")),
+    };
   }
 
-  if (!items.length) return null;
+  if (feat.hasEffects) {
+    item.effects = {
+      selfBody: getStr(row, map, "strSelfBodyEffect"),
+      targBody: getStr(row, map, "strTargBodyEffect"),
+      target: getStr(row, map, "strTargetEffect"),
+      general: getStr(row, map, "strGeneralEffect"),
+    };
+  }
 
-  return {
-    showContents: toBool(get(row, map, "Show Contents")),
-    items,
-  };
+  if (feat.hasFiles) {
+    item.files = {
+      field: getStr(row, map, "strFieldFile"),
+      inventory: getStr(row, map, "strInventoryFile"),
+    };
+  }
+
+  if (feat.hasArrInv) {
+    const arr = [];
+    for (let i = 0; i < 20; i++) {
+      const v = getStr(row, map, `strArrInventoryFile ${i}`);
+      if (v) arr.push({ index: i, file: v });
+    }
+    if (arr.length) item.arrInventoryFiles = arr;
+  }
+
+  if (feat.hasWearing) {
+    const arr = [];
+    for (let i = 0; i < 20; i++) {
+      const v = getStr(row, map, `strWearingFile ${i}`);
+      if (v) arr.push({ index: i, file: v });
+    }
+    if (arr.length) item.wearingFiles = arr;
+  }
+
+  if (feat.hasWearingEx) {
+    const arr = [];
+    for (let i = 0; i < 20; i++) {
+      const v = getStr(row, map, `strWearingFileEx ${i}`);
+      if (v) arr.push({ index: i, file: v });
+    }
+    if (arr.length) item.wearingFilesEx = arr;
+  }
+
+  if (feat.hasBox) {
+    const boxItems = [];
+    for (let i = 0; i < ITEM_SIZE; i++) {
+      const m = toInt(get(row, map, `sITEMS ${i} nidITEM wMainID`));
+      const s = toInt(get(row, map, `sITEMS ${i} nidITEM wSubID`));
+      const amount = toInt(get(row, map, `sITEMS ${i} dwAMOUNT`));
+      if (!m && !s) continue;
+      boxItems.push({ itemId: `${m}-${s}`, amount });
+    }
+    if (boxItems.length) {
+      item.box = {
+        showContents: feat.hasShowContents ? toBool(get(row, map, "Show Contents")) : false,
+        items: boxItems,
+      };
+    }
+  }
+
+  if (feat.hasRandomBox) {
+    const rbox = [];
+    for (let i = 0; i < BOX_SIZE; i++) {
+      const m = toInt(get(row, map, `vecBOX ${i} nidITEM wMainID`));
+      const s = toInt(get(row, map, `vecBOX ${i} nidITEM wSubID`));
+      const rate = toFloat(get(row, map, `vecBOX ${i} fRATE`));
+      if (!m && !s) continue;
+      rbox.push({ itemId: `${m}-${s}`, rate });
+    }
+    if (rbox.length) item.randomBox = rbox;
+  }
+
+  return item;
 }
 
 /* ======================================================
    BUILD
 ====================================================== */
 
-async function buildItems() {
+export async function buildItems(csvPath = INPUT, outputPath = OUTPUT) {
   const items = [];
   let headerMap = null;
+  let feat = null;
 
   const rl = readline.createInterface({
-    input: fs.createReadStream(INPUT, { encoding: ENCODING }),
+    input: fs.createReadStream(csvPath, { encoding: ENCODING }),
     crlfDelay: Infinity,
   });
 
@@ -502,27 +368,25 @@ async function buildItems() {
       cols.forEach((h, i) => {
         headerMap[normalizeHeader(h)] = i;
       });
-
+      feat = detectFeatures(headerMap);
+      console.log(`[build-items] Detected features:`, feat);
       continue;
     }
 
-    const item = parseItem(cols, headerMap);
-
-    const suit = parseSuit(cols, headerMap);
-    if (suit) item.suit = suit;
-
-    const drug = parseDrug(cols, headerMap);
-    if (drug) item.drug = drug;
-
-    const box = parseBox(cols, headerMap);
-    if (box) item.box = box;
-
-    items.push(item);
+    items.push(parseRow(cols, headerMap, feat));
   }
 
-  fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
-  fs.writeFileSync(OUTPUT, JSON.stringify(items, null, 2));
-  console.log(`✔ Built ${items.length} items`);
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify(items, null, 2));
+
+  return { itemCount: items.length };
 }
 
-buildItems();
+// CLI: run directly with `node scripts/build-items.js`
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
+  buildItems().then(({ itemCount }) => {
+    console.log(`✔ Built ${itemCount} items`);
+  });
+}

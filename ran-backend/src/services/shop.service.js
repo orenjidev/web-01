@@ -95,9 +95,9 @@ const loadItemMetadata = async () => {
           : row.ShopType === 2
             ? "UserPoint2"
             : "UNKNOWN",
-      iconName: itemMeta.inventoryFile,
-      iconMain: itemMeta.sIconMainID,
-      iconSub: itemMeta.sIconSubID,
+      iconName: itemMeta.files?.inventory ?? itemMeta.inventoryFile ?? "",
+      iconMain: itemMeta.icon?.main ?? itemMeta.sIconMainID ?? 0,
+      iconSub: itemMeta.icon?.sub ?? itemMeta.sIconSubID ?? 0,
       isBox,
       ...(isBox &&
         itemMeta.box?.showContents && {

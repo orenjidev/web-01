@@ -9,14 +9,32 @@ import healthRoutes from "../api/routes/health.routes.js";
 import apiRoutes from "../api/routes/index.js";
 import { errorMiddleware } from "../api/middlewares/error.middleware.js";
 import { initItemsCache } from "../services/items.service.js";
+import { buildItems } from "../../scripts/build-items.js";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
+
+const CSV_PATH = path.resolve("data/items/Item.csv");
+const OUTPUT_PATH = path.resolve("generated/items.web.json");
 
 export function createExpressApp() {
   const app = express();
 
-  // preload items
-  initItemsCache();
+  // Build items from CSV then load into cache
+  if (fs.existsSync(CSV_PATH)) {
+    buildItems(CSV_PATH, OUTPUT_PATH)
+      .then(({ itemCount }) => {
+        console.log(`[startup] Built ${itemCount} items from CSV`);
+        initItemsCache(true);
+      })
+      .catch((err) => {
+        console.warn(`[startup] Items build failed: ${err.message}, trying existing JSON...`);
+        try { initItemsCache(); } catch { /* no JSON available yet */ }
+      });
+  } else {
+    // No CSV — try loading existing JSON
+    try { initItemsCache(); } catch { /* no data yet */ }
+  }
 
   // Swagger (dev only, staff-protected)
   // setupSwagger(app, {

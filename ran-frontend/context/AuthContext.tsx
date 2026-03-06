@@ -80,7 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (redirecting.current) return;
       redirecting.current = true;
       setUser(null);
-      router.replace("/login");
+      const isAdmin = window.location.pathname.startsWith("/dashboard");
+      router.replace(isAdmin ? "/dashboard/login" : "/login");
       setTimeout(() => { redirecting.current = false; }, 3000);
     };
 

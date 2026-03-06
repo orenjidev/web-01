@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   FileText,
   GalleryVerticalEnd,
+  Hammer,
   LayoutDashboard,
   ScrollText,
   Settings2,
@@ -38,7 +39,8 @@ export type AdminSection =
   | "downloads"
   | "server.config"
   | "logs.user"
-  | "logs.gm";
+  | "logs.gm"
+  | "tools.buildItems";
 
 const data = {
   user: {
@@ -111,6 +113,14 @@ const data = {
       items: [
         { title: "Manage News", action: "news" as AdminSection },
         { title: "Manage Downloads", action: "downloads" as AdminSection },
+      ],
+    },
+    {
+      title: "Tools",
+      url: "#",
+      icon: Hammer,
+      items: [
+        { title: "Build Items", action: "tools.buildItems" as AdminSection },
       ],
     },
     {

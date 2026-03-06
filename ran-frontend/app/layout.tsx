@@ -12,6 +12,7 @@ import { PublicConfigProvider } from "@/context/PublicConfigContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { ModalProvider } from "@/context/ModalContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MaintenanceProvider } from "@/context/MaintenanceContext";
 
 /* =====================================================
    Fonts
@@ -68,15 +69,17 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <PublicConfigProvider>
-            <LanguageProvider>
-              <TooltipProvider>
-                <ModalProvider>{children}</ModalProvider>
-              </TooltipProvider>
-            </LanguageProvider>
-          </PublicConfigProvider>
-        </AuthProvider>
+        <MaintenanceProvider>
+          <AuthProvider>
+            <PublicConfigProvider>
+              <LanguageProvider>
+                <TooltipProvider>
+                  <ModalProvider>{children}</ModalProvider>
+                </TooltipProvider>
+              </LanguageProvider>
+            </PublicConfigProvider>
+          </AuthProvider>
+        </MaintenanceProvider>
       </body>
     </html>
   );
