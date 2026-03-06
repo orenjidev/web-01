@@ -121,6 +121,36 @@ export const purchaseShopItemController = async (req, res) => {
   }
 };
 
+export const purchaseCartController = async (req, res) => {
+  const MSG = getMessage(req.ctx?.lang);
+
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        message: MSG.SHOP.INVALID_PRODUCT,
+      });
+    }
+
+    await shopFunc.purchaseCart({
+      items,
+      ctx: req.ctx.user,
+    });
+
+    return res.json({
+      ok: true,
+      message: MSG.SHOP.PURCHASE_SUCCESS,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      ok: false,
+      message: mapShopError(err, MSG),
+    });
+  }
+};
+
 // History
 export const getPurchaseHistoryController = async (req, res) => {
   try {

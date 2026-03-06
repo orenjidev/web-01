@@ -243,6 +243,7 @@ const messages = {
 
     RATE_LIMIT: {
       REGISTER: "Too many registration attempts. Please try again in 15 minutes.",
+      LOGIN: "Too many login attempts. Please try again in 15 minutes.",
     },
 
     /* -------------------------

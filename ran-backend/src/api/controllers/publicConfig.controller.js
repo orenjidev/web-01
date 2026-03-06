@@ -7,6 +7,7 @@ export function getPublicConfig(req, res) {
     serverWebsite: baseServerConfig.definitions.serverWebsite,
     serverMotto: baseServerConfig.definitions.serverMotto,
     ePointsName: baseServerConfig.definitions.ePointsName,
+    vPointsName: baseServerConfig.definitions.vPointsName ?? "V-Points",
     footertext: baseServerConfig.definitions.footer,
     highlights: baseServerConfig.definitions.highlights ?? [],
     defaultLanguage: baseServerConfig.coreOptions.defaultLanguage ?? "en",
@@ -40,10 +41,7 @@ export function getPublicConfig(req, res) {
       if (!raw) {
         return {
           locales: null,
-          enabledLocales: [
-            { code: "en", displayName: "English" },
-            { code: "th", displayName: "ภาษาไทย" },
-          ],
+          enabledLocales: [{ code: "en", displayName: "English" }],
         };
       }
       const { _meta = {}, ...localeData } = raw;
@@ -54,8 +52,14 @@ export function getPublicConfig(req, res) {
             .map(([code, m]) => ({ code, displayName: m.displayName ?? code.toUpperCase() }))
         : Object.keys(localeData).map((code) => ({
             code,
-            displayName: code === "en" ? "English" : code === "th" ? "ภาษาไทย" : code.toUpperCase(),
+            displayName: code.toUpperCase(),
           }));
+
+      // English is the built-in base language — always present
+      if (!enabledLocales.find((l) => l.code === "en")) {
+        enabledLocales.unshift({ code: "en", displayName: "English" });
+      }
+
       const filteredLocales = {};
       for (const { code } of enabledLocales) {
         if (localeData[code]) filteredLocales[code] = localeData[code];

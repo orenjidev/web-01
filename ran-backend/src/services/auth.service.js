@@ -10,7 +10,8 @@ import {
 } from "./auth/auth.validation.js";
 import {
   queryUserByUserId,
-  checkUserExists,
+  checkUserIdExists,
+  checkEmailExists,
   insertUser,
   queryUserNumAndPincode,
   updateUserPassword,
@@ -105,10 +106,10 @@ export const register = async (body, ctx = {}) => {
   const { userid, password, pincode, email } = body;
   const userPool = await getUserPool();
 
-  if (await checkUserExists(userPool, "UserID", userid))
+  if (await checkUserIdExists(userPool, userid))
     return { ok: false, message: MSG.REGISTER.USERNAME_TAKEN };
 
-  if (await checkUserExists(userPool, "UserEmail", email))
+  if (await checkEmailExists(userPool, email))
     return { ok: false, message: MSG.REGISTER.EMAIL_TAKEN };
 
   await insertUser(userPool, {

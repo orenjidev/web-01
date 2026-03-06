@@ -1,7 +1,4 @@
-/* =====================================================
-   Config
-===================================================== */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT_URL;
+import { apiFetch } from "@/lib/apiFetch";
 
 const USE_MOCK_DATA = false;
 
@@ -85,30 +82,6 @@ export const rankingCategories = [
 ] as const;
 
 export type RankingCategoryValue = (typeof rankingCategories)[number]["value"];
-
-/* =====================================================
-   Internal API helper
-===================================================== */
-
-async function apiFetch<T>(path: string): Promise<T> {
-  if (!API_BASE_URL) {
-    throw new Error("API endpoint is not configured");
-  }
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Request failed");
-  }
-
-  return res.json() as Promise<T>;
-}
 
 /* =====================================================
    Public Data Access

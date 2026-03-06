@@ -72,6 +72,33 @@ export const getDownloadController = async (req, res) => {
 };
 
 /**
+ * POST /api/download/:id/click
+ */
+export const trackClickController = async (req, res) => {
+  const MSG = getMessage(req.ctx.lang);
+
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({
+        ok: false,
+        message: MSG.GENERAL.INVALID_REQUEST,
+      });
+    }
+
+    const updated = await downloadService.trackDownloadClick(id);
+
+    return res.json({ ok: updated });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      message: MSG.GENERAL.ERROR,
+    });
+  }
+};
+
+/**
  * GET /api/download/types
  */
 export const listDownloadTypesController = async (req, res) => {

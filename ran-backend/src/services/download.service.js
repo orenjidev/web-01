@@ -19,7 +19,8 @@ import { getWebPool } from "../loaders/mssql.js";
         DownloadType,
         DownloadLink,
         CreatedAt,
-        Visible
+        Visible,
+        ISNULL(ClickCount, 0) AS ClickCount
       FROM DownloadLinks
       WHERE (@type IS NULL OR DownloadType = @type)
       ORDER BY
@@ -28,6 +29,21 @@ import { getWebPool } from "../loaders/mssql.js";
     `);
 
   return result.recordset;
+}
+
+/**
+ * Increment click count for a download
+ */
+export async function trackDownloadClick(id) {
+  const pool = await getWebPool();
+
+  const result = await pool.request().input("id", id).query(`
+    UPDATE DownloadLinks
+    SET ClickCount = ISNULL(ClickCount, 0) + 1
+    WHERE ID = @id AND Visible = 1
+  `);
+
+  return result.rowsAffected[0] > 0;
 }
 
 /**
@@ -43,7 +59,8 @@ export async function getDownloadById(id) {
         DescriptionBase64,
         DownloadLink,
         DownloadType,
-        CreatedAt
+        CreatedAt,
+        ISNULL(ClickCount, 0) AS ClickCount
       FROM DownloadLinks
       WHERE ID = @id
         AND Visible = 1

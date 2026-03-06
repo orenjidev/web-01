@@ -7,6 +7,7 @@ export interface PublicConfig {
   serverWebsite: string;
   serverMotto: string;
   ePointsName: string;
+  vPointsName: string;
   footertext: string;
   highlights: string[];
   defaultLanguage: string;

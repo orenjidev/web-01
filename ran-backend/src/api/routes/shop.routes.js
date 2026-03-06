@@ -26,6 +26,7 @@ import {
   getShopItemsController,
   getFullShopController,
   purchaseShopItemController,
+  purchaseCartController,
   getPurchaseHistoryController,
 } from "../controllers/shop.controller.js";
 import {
@@ -153,5 +154,6 @@ router.get("/purchase-history", getPurchaseHistoryController);
  *   - Service-layer errors are returned directly
  */
 router.post("/purchase", purchaseShopItemController);
+router.post("/purchase-cart", purchaseCartController);
 
 export default router;

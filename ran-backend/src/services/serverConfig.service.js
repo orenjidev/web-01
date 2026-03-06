@@ -82,8 +82,12 @@ export const loadServerConfig = async () => {
 
     // Merge DB values into the live in-memory object (shallow per section)
     for (const key of DB_SECTIONS) {
-      if (dbMap[key] !== undefined && baseServerConfig[key] !== undefined) {
-        Object.assign(baseServerConfig[key], dbMap[key]);
+      if (dbMap[key] !== undefined) {
+        if (baseServerConfig[key] && typeof baseServerConfig[key] === "object") {
+          Object.assign(baseServerConfig[key], dbMap[key]);
+        } else {
+          baseServerConfig[key] = dbMap[key];
+        }
       }
     }
 
@@ -148,7 +152,9 @@ export const updateConfigSection = async (key, value, userNum = null) => {
     `);
 
   // Apply in-memory immediately (no restart required)
-  if (baseServerConfig[key] !== undefined) {
+  if (baseServerConfig[key] && typeof baseServerConfig[key] === "object") {
     Object.assign(baseServerConfig[key], value);
+  } else {
+    baseServerConfig[key] = value;
   }
 };

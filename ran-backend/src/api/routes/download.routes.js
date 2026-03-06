@@ -15,6 +15,7 @@ import {
   listDownloadsController,
   getDownloadController,
   listDownloadTypesController,
+  trackClickController,
 } from "../controllers/download.controller.js";
 
 const router = Router();
@@ -34,6 +35,13 @@ router.get("/", listDownloadsController);
  * -----------------------------------------------------
  */
 router.get("/types", listDownloadTypesController);
+
+/**
+ * -----------------------------------------------------
+ * POST /api/download/:id/click
+ * -----------------------------------------------------
+ */
+router.post("/:id/click", trackClickController);
 
 /**
  * -----------------------------------------------------

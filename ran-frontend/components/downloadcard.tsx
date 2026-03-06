@@ -12,7 +12,7 @@ import { Download } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { DownloadLink, getDownloadLinks } from "@/lib/data/download.data";
+import { DownloadLink, getDownloadLinks, trackDownloadClick } from "@/lib/data/download.data";
 import { useT } from "@/context/LanguageContext";
 
 /* =====================================================
@@ -97,6 +97,7 @@ export default function DownloadCard() {
                       }
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackDownloadClick(link.id)}
                     >
                       <Download className="w-5 h-5" />
                       {link.download_title}

@@ -4,10 +4,10 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
-    remotePatterns: [
-      { protocol: "http", hostname: "**" },
-      { protocol: "https", hostname: "**" },
-    ],
+    remotePatterns: (process.env.IMAGE_DOMAINS ?? "")
+      .split(",")
+      .filter(Boolean)
+      .map((h) => ({ protocol: "https" as const, hostname: h.trim() })),
   },
 };
 

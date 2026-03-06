@@ -1,8 +1,4 @@
-/* =====================================================
-   Config
-===================================================== */
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT_URL;
+import { apiFetch } from "@/lib/apiFetch";
 
 /* =====================================================
    Types
@@ -16,6 +12,9 @@ export interface StaffTicketRow {
   Username: string;
   CreatedAt: string;
   UpdatedAt: string | null;
+  ReplyCount: number;
+  LastReplyIsStaff: boolean | null;
+  LastReplyAt: string | null;
 }
 
 export interface TicketReply {
@@ -63,24 +62,6 @@ export interface StaffListItem {
 }
 
 /* =====================================================
-   Internal API Helper
-===================================================== */
-
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  if (!API_BASE_URL) throw new Error("API endpoint is not configured");
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message || "Request failed");
-  return json as T;
-}
-
-/* =====================================================
    Public Accessors
 ===================================================== */
 
@@ -122,18 +103,13 @@ export async function staffReply(
   files?: File[],
 ): Promise<{ ok: boolean }> {
   if (files && files.length > 0) {
-    if (!API_BASE_URL) throw new Error("API endpoint is not configured");
     const form = new FormData();
     form.append("message", message);
     files.forEach((f) => form.append("attachments", f));
-    const res = await fetch(`${API_BASE_URL}/api/tickets/staff/${ticketId}/reply`, {
+    return apiFetch(`/api/tickets/staff/${ticketId}/reply`, {
       method: "POST",
-      credentials: "include",
       body: form,
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Request failed");
-    return json;
   }
   return apiFetch(`/api/tickets/staff/${ticketId}/reply`, {
     method: "POST",

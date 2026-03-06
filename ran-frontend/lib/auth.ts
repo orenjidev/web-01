@@ -3,6 +3,8 @@
    Single source of truth for auth-related calls
 ===================================================== */
 
+import { csrfHeaders, invalidateCsrfToken } from "@/lib/csrf";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT_URL;
 
 /* =====================================================
@@ -44,6 +46,7 @@ export async function registerUser(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(await csrfHeaders()),
       },
       credentials: "include",
       body: JSON.stringify({
@@ -102,6 +105,7 @@ export async function loginUser(payload: LoginPayload): Promise<void> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await csrfHeaders()),
     },
     credentials: "include",
     body: JSON.stringify({
@@ -122,6 +126,9 @@ export async function loginUser(payload: LoginPayload): Promise<void> {
   if (!res.ok || !data.ok) {
     throw new Error(data.message || "Invalid username or password");
   }
+
+  // Session is regenerated on login — cached CSRF token is now stale
+  invalidateCsrfToken();
 }
 
 /* =====================================================
@@ -178,10 +185,13 @@ export async function logoutUser(): Promise<void> {
 
   const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
     method: "POST",
-    credentials: "include", // 🔴 IMPORTANT (cookie-based session)
+    credentials: "include",
+    headers: await csrfHeaders(),
   });
 
   if (!res.ok) {
     throw new Error("Logout failed");
   }
+
+  invalidateCsrfToken();
 }

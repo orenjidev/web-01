@@ -1,7 +1,4 @@
-/* =====================================================
-   Config
-===================================================== */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT_URL;
+import { apiFetch } from "@/lib/apiFetch";
 
 /* =====================================================
    Ticket Domain Types (UI CONTRACT)
@@ -25,7 +22,12 @@ export interface TicketItem {
   subject: string;
   category: string;
   status: string;
+  priority: string;
   created_at: string;
+  updated_at: string;
+  replyCount: number;
+  lastReplyAt: string | null;
+  lastReplyIsStaff: boolean;
 }
 
 export interface TicketReply {
@@ -68,31 +70,6 @@ export interface TicketDetail {
 interface BackendResponse<T> {
   ok: boolean;
   data: T;
-}
-
-/* =====================================================
-   Internal helper
-===================================================== */
-
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  if (!API_BASE_URL) {
-    throw new Error("API endpoint is not configured");
-  }
-
-  const isFormData = options?.body instanceof FormData;
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: isFormData ? undefined : { "Content-Type": "application/json" },
-    ...options,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Request failed");
-  }
-
-  return res.json() as Promise<T>;
 }
 
 /* =====================================================
@@ -168,8 +145,12 @@ export async function getMyTickets(): Promise<TicketItem[]> {
     subject: t.Subject,
     category: t.CategoryName,
     status: t.Status,
+    priority: t.Priority ?? "Low",
     created_at: t.CreatedAt,
-    updated_at: t.CreatedAt, // or UpdatedAt if you add it in SQL
+    updated_at: t.UpdatedAt ?? t.CreatedAt,
+    replyCount: t.ReplyCount ?? 0,
+    lastReplyAt: t.LastReplyAt ?? null,
+    lastReplyIsStaff: Boolean(t.LastReplyIsStaff),
   }));
 }
 

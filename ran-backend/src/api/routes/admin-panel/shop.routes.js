@@ -14,6 +14,7 @@
  */
 import { Router } from "express";
 import * as gmShopController from "../../../modules/gm-tool/shop/gmShop.controller.js";
+import * as shopAnalytics from "../../controllers/admin-panel/shopAnalytics.controller.js";
 import { requireStaff } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -24,6 +25,7 @@ router.use(requireStaff);
 router.get("/categories", gmShopController.getCategories);
 router.post("/categories", gmShopController.createCategory);
 router.patch("/categories/:idx", gmShopController.patchCategory);
+router.delete("/categories/:idx", gmShopController.deleteCategory);
 
 /* ---------- Shop Items ---------- */
 router.get("/items", gmShopController.getItems);
@@ -40,5 +42,12 @@ router.delete("/mystery/items/:productId", gmShopController.deleteMysteryItem);
 /* ---------- Mystery Shop User Data ---------- */
 router.get("/mystery/user/:userNum", gmShopController.getMysteryUserData);
 router.post("/mystery/user/:userNum", gmShopController.saveMysteryUserData);
+
+/* ---------- Shop Analytics ---------- */
+router.get("/analytics/overview", shopAnalytics.getOverviewController);
+router.get("/analytics/top-items", shopAnalytics.getTopItemsController);
+router.get("/analytics/revenue", shopAnalytics.getRevenueController);
+router.get("/analytics/daily-trend", shopAnalytics.getDailyTrendController);
+router.get("/analytics/recent", shopAnalytics.getRecentPurchasesController);
 
 export default router;

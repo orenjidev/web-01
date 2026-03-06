@@ -10,6 +10,7 @@ import {
   replyToTicket,
   TicketDetail,
 } from "@/lib/data/ticket.data";
+import { markTicketAsRead } from "@/components/tickets/TicketList";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ export default function TicketDetailPage() {
       if (!data) return;
 
       setTicket(data);
+      markTicketAsRead(ticketId);
 
       const sorted = [...data.replies].sort(
         (a, b) =>

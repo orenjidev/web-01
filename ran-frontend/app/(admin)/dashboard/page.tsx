@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -68,6 +68,8 @@ import { NewsSection } from "@/components/admin/sections/NewsSection";
 import { DownloadSection } from "@/components/admin/sections/DownloadSection";
 import { ConfigSection } from "@/components/admin/sections/ConfigSection";
 import { ActionLogSection } from "@/components/admin/sections/ActionLogSection";
+import { ShopAnalyticsSection } from "@/components/admin/sections/ShopAnalyticsSection";
+import { usePolling } from "@/hooks/usePolling";
 
 /* =====================================================
    Constants
@@ -95,6 +97,7 @@ const SECTION_LABELS: Record<AdminSection, string> = {
   "ticket.list": "Support Tickets",
   "shop.categories": "Shop Categories",
   "shop.items": "Shop Items",
+  "shop.analytics": "Shop Analytics",
   news: "Manage News",
   downloads: "Manage Downloads",
   "server.config": "Server Configuration",
@@ -248,39 +251,34 @@ function StatCard({
    Dashboard Overview Section
 ===================================================== */
 
+interface DashboardBundle {
+  stats: DashboardStats;
+  trend: DashboardTrendItem[];
+  schoolStats: SchoolStatItem[];
+  classStats: ClassStatItem[];
+}
+
+async function fetchDashboardBundle(): Promise<DashboardBundle> {
+  const [stats, trend, schoolStats, classStats] = await Promise.all([
+    getDashboardStats(),
+    getDashboardTrend(),
+    getStatsPerSchool(),
+    getStatsPerClass(),
+  ]);
+  return { stats, trend, schoolStats, classStats };
+}
+
 function DashboardOverview() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [trend, setTrend] = useState<DashboardTrendItem[]>([]);
-  const [schoolStats, setSchoolStats] = useState<SchoolStatItem[]>([]);
-  const [classStats, setClassStats] = useState<ClassStatItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error, lastUpdated, refresh } = usePolling(
+    fetchDashboardBundle,
+    { interval: 60_000 },
+  );
 
-  async function fetchData(isRefresh = false) {
-    try {
-      if (isRefresh) setRefreshing(true);
-      else setLoading(true);
-      setError(null);
-      const [statsData, trendData, schoolData, classData] = await Promise.all([
-        getDashboardStats(),
-        getDashboardTrend(),
-        getStatsPerSchool(),
-        getStatsPerClass(),
-      ]);
-      setStats(statsData);
-      setTrend(trendData);
-      setSchoolStats(schoolData);
-      setClassStats(classData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => { fetchData(); }, []);
+  const stats = data?.stats ?? null;
+  const trend = data?.trend ?? [];
+  const schoolStats = data?.schoolStats ?? [];
+  const classStats = data?.classStats ?? [];
+  const refreshing = false;
 
   /* ---- Derived Chart Data ---- */
 
@@ -312,10 +310,10 @@ function DashboardOverview() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold">Server Overview</h2>
-          {stats && (
+          {lastUpdated && (
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
               <Clock className="h-3 w-3" />
-              Last updated: {new Date(stats.updatedAt).toLocaleString()}
+              Auto-refreshes every 60s &middot; Last: {lastUpdated.toLocaleTimeString()}
             </p>
           )}
         </div>
@@ -323,10 +321,10 @@ function DashboardOverview() {
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => fetchData(true)}
-          disabled={refreshing || loading}
+          onClick={refresh}
+          disabled={loading}
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
@@ -335,7 +333,7 @@ function DashboardOverview() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive text-sm">Error loading dashboard</CardTitle>
-            <CardDescription>{error}</CardDescription>
+            <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -641,6 +639,7 @@ export default function DashboardPage() {
           {activeSection === "ticket.list" && <TicketSection />}
           {activeSection === "shop.categories" && <ShopSection tab="categories" />}
           {activeSection === "shop.items" && <ShopSection tab="items" />}
+          {activeSection === "shop.analytics" && <ShopAnalyticsSection />}
           {activeSection === "news" && <NewsSection />}
           {activeSection === "downloads" && <DownloadSection />}
           {activeSection === "server.config" && <ConfigSection />}

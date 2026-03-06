@@ -18,8 +18,11 @@ import { logAction } from "./actionlog.service.js";
 
 const rankCache = new Map();
 
+const ALLOWED_RANKING_LIMITS = [10, 50, 100, 500];
+
 export const getCharacterRanking = async (limit = 100, classFilter = "") => {
-  const top = Math.min(parseInt(limit, 10) || 100, 500);
+  const parsed = parseInt(limit, 10);
+  const top = ALLOWED_RANKING_LIMITS.includes(parsed) ? parsed : 100;
   const filter = classFilter.toLowerCase();
   const cacheKey = `${top}:${filter}`;
   const now = Date.now();

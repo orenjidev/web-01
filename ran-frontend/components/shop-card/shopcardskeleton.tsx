@@ -1,27 +1,22 @@
-import { Card, CardContent, CardHeader } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 
 export function ShopCardSkeleton() {
   return (
-    <Card className="h-[340px] flex flex-col">
-      <CardHeader className="flex-grow">
-        <Skeleton className="h-6 w-3/4 mb-2" /> {/* Title */}
-        <Skeleton className="h-4 w-1/3" /> {/* Category */}
-      </CardHeader>
-
-      <CardContent className="mt-auto space-y-4">
-        {/* Image placeholder */}
-        <div className="flex justify-center">
-          <Skeleton className="h-32 w-32 rounded-md" />
+    <Card className="flex flex-col overflow-hidden">
+      <CardContent className="flex flex-col h-full p-0">
+        {/* Icon area */}
+        <div className="bg-muted/40 flex items-center justify-center py-6 px-4">
+          <Skeleton className="h-16 w-16 rounded" />
         </div>
 
-        {/* Price & Button */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-16" /> {/* Price */}
-            <Skeleton className="h-4 w-24" /> {/* Purchase Type */}
+        {/* Info area */}
+        <div className="flex flex-col gap-2 p-3">
+          <div className="flex justify-between">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-8" />
           </div>
-          <Skeleton className="h-10 w-20 rounded-md" /> {/* Button */}
+          <Skeleton className="h-8 w-full rounded-md" />
         </div>
       </CardContent>
     </Card>

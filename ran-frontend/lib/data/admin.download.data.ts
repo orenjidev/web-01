@@ -1,8 +1,4 @@
-/* =====================================================
-   Config
-===================================================== */
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT_URL;
+import { apiFetch } from "@/lib/apiFetch";
 
 /* =====================================================
    Types
@@ -15,6 +11,7 @@ export interface DownloadRow {
   DownloadType: string;
   Visible: boolean;
   CreatedAt: string;
+  ClickCount: number;
 }
 
 export interface CreateDownloadPayload {
@@ -27,24 +24,6 @@ export interface CreateDownloadPayload {
 
 export interface UpdateDownloadPayload extends Partial<CreateDownloadPayload> {
   id: number;
-}
-
-/* =====================================================
-   Internal API Helper
-===================================================== */
-
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  if (!API_BASE_URL) throw new Error("API endpoint is not configured");
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message || "Request failed");
-  return json as T;
 }
 
 /* =====================================================

@@ -1,6 +1,7 @@
 import express from "express";
 import session from "express-session";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import { GlobalConfig } from "../config/global.config.js";
 
@@ -25,6 +26,7 @@ export function createExpressApp() {
   // });
 
   app.set("trust proxy", GlobalConfig.security.trustProxy);
+  app.use(cookieParser());
   app.use(express.json());
 
   // cors — supports comma-separated WEB_URL list (e.g. for multiple frontends)
@@ -62,7 +64,7 @@ export function createExpressApp() {
       cookie: {
         httpOnly: true,
         sameSite: "lax",
-        secure: false, // true only on HTTPS
+        secure: process.env.NODE_ENV === "production",
         path: "/", // 🔑 IMPORTANT
         maxAge: 1000 * 60 * 60 * 2,
       },

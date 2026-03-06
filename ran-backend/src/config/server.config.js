@@ -30,6 +30,7 @@ export const baseServerConfig = {
     serverWebsite: "https://example.com",
     serverMotto: "",
     ePointsName: "E-Points",
+    vPointsName: "V-Points",
     footer: "© RNG Development",
     highlights: [
       "Official Ran GS Server - 2015",

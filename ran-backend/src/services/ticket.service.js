@@ -153,7 +153,13 @@ export const getUserTickets = async (filters = {}, ctx = {}) => {
       t.Status,
       t.Priority,
       t.CreatedAt,
-      tc.CategoryName
+      t.UpdatedAt,
+      tc.CategoryName,
+      (SELECT COUNT(*) FROM dbo.TicketReplies r WHERE r.TicketID = t.TicketID) AS ReplyCount,
+      (SELECT TOP 1 r.IsStaffReply FROM dbo.TicketReplies r
+       WHERE r.TicketID = t.TicketID ORDER BY r.CreatedAt DESC) AS LastReplyIsStaff,
+      (SELECT MAX(r.CreatedAt) FROM dbo.TicketReplies r
+       WHERE r.TicketID = t.TicketID) AS LastReplyAt
     FROM dbo.Tickets t
     LEFT JOIN dbo.TicketCategories tc ON t.CategoryID = tc.CategoryID
     WHERE t.UserNum = @UserNum
@@ -171,7 +177,7 @@ export const getUserTickets = async (filters = {}, ctx = {}) => {
     request.input("CategoryID", filters.categoryId);
   }
 
-  query += " ORDER BY t.CreatedAt DESC";
+  query += " ORDER BY COALESCE(t.UpdatedAt, t.CreatedAt) DESC";
 
   const result = await request.query(query);
 
@@ -347,7 +353,12 @@ export const getAllTicketsStaff = async (filters = {}, ctx = {}) => {
       t.Priority,
       t.CreatedAt,
       t.UpdatedAt,
-      u.UserID AS Username
+      u.UserID AS Username,
+      (SELECT COUNT(*) FROM dbo.TicketReplies r WHERE r.TicketID = t.TicketID) AS ReplyCount,
+      (SELECT TOP 1 r.IsStaffReply FROM dbo.TicketReplies r
+       WHERE r.TicketID = t.TicketID ORDER BY r.CreatedAt DESC) AS LastReplyIsStaff,
+      (SELECT MAX(r.CreatedAt) FROM dbo.TicketReplies r
+       WHERE r.TicketID = t.TicketID) AS LastReplyAt
     FROM dbo.Tickets t
     LEFT JOIN [${process.env.DB_NAME_USER}].dbo.UserInfo u
       ON t.UserNum = u.UserNum
@@ -359,7 +370,7 @@ export const getAllTicketsStaff = async (filters = {}, ctx = {}) => {
     request.input("Status", filters.status);
   }
 
-  query += " ORDER BY t.CreatedAt DESC";
+  query += " ORDER BY COALESCE(t.UpdatedAt, t.CreatedAt) DESC";
 
   const result = await request.query(query);
   return { ok: true, tickets: result.recordset };

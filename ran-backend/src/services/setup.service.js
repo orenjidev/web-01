@@ -147,6 +147,10 @@ const SETUP_STATEMENTS = [
     CONSTRAINT PK_DownloadLinks PRIMARY KEY (ID)
   );`,
 
+  /* ── DownloadLinks: add ClickCount column ──────────────────── */
+  `IF COL_LENGTH('dbo.DownloadLinks', 'ClickCount') IS NULL
+   ALTER TABLE dbo.DownloadLinks ADD ClickCount INT NOT NULL DEFAULT 0;`,
+
   /* ── ServerConfig ───────────────────────────────────────────── */
   /* Also created by serverConfig.service.js — safe to repeat (idempotent). */
   `IF NOT EXISTS (

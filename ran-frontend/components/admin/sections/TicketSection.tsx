@@ -67,24 +67,72 @@ function isImagePath(filePath: string) {
 }
 
 /* ─────────────────────────────
+   Read / Unread tracking (localStorage)
+───────────────────────────── */
+const READ_STORAGE_KEY = "ran_ticket_read";
+
+function getReadMap(): Record<number, string> {
+  try {
+    return JSON.parse(localStorage.getItem(READ_STORAGE_KEY) || "{}");
+  } catch { return {}; }
+}
+
+function markAsRead(ticketId: number) {
+  const map = getReadMap();
+  map[ticketId] = new Date().toISOString();
+  localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(map));
+}
+
+function isUnread(ticket: StaffTicketRow, map: Record<number, string>): boolean {
+  const lastRead = map[ticket.TicketID];
+  if (!lastRead) return true; // never opened = unread
+  const updatedAt = ticket.UpdatedAt ?? ticket.CreatedAt;
+  return new Date(updatedAt).getTime() > new Date(lastRead).getTime();
+}
+
+/* ─────────────────────────────
    Ticket List Item
 ───────────────────────────── */
-function TicketListItem({ ticket, selected, onClick }: {
-  ticket: StaffTicketRow; selected: boolean; onClick: () => void;
+function TicketListItem({ ticket, selected, unread, onClick }: {
+  ticket: StaffTicketRow; selected: boolean; unread: boolean; onClick: () => void;
 }) {
+  const lastActivity = ticket.LastReplyAt ?? ticket.UpdatedAt ?? ticket.CreatedAt;
+  const awaitingStaff = ticket.LastReplyIsStaff === false && ticket.Status !== "Closed";
+  const awaitingUser = ticket.LastReplyIsStaff === true && ticket.Status !== "Closed";
+
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3 border-b border-border/50 transition-colors hover:bg-muted/40 ${selected ? "bg-muted/60 border-l-2 border-l-primary" : ""}`}
+      className={`w-full text-left px-4 py-3 border-b border-border/50 transition-colors hover:bg-muted/40 ${selected ? "bg-muted/60 border-l-2 border-l-primary" : ""} ${unread && !selected ? "bg-primary/5" : ""}`}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
-        <span className="text-sm font-medium truncate flex-1">{ticket.Subject}</span>
-        <span className="text-xs text-muted-foreground whitespace-nowrap">{timeAgo(ticket.CreatedAt)}</span>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {unread && (
+            <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+          )}
+          <span className={`text-sm truncate flex-1 ${unread ? "font-semibold" : "font-medium"}`}>{ticket.Subject}</span>
+        </div>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">{timeAgo(lastActivity)}</span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground truncate flex-1">
           {ticket.Username ?? `#${ticket.TicketID}`}
         </span>
+        {ticket.ReplyCount > 0 && (
+          <span className="text-[10px] text-muted-foreground tabular-nums">
+            {ticket.ReplyCount}
+          </span>
+        )}
+        {awaitingStaff && (
+          <span className="text-[10px] font-medium text-amber-500">
+            Awaiting staff
+          </span>
+        )}
+        {awaitingUser && (
+          <span className="text-[10px] font-medium text-sky-500">
+            Awaiting user
+          </span>
+        )}
         <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium ${statusBadge(ticket.Status)}`}>
           {ticket.Status}
         </span>
@@ -239,8 +287,8 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
 /* ─────────────────────────────
    Ticket Detail Panel
 ───────────────────────────── */
-function TicketDetailPanel({ ticketId, onStatusChange }: {
-  ticketId: number; onStatusChange: () => void;
+function TicketDetailPanel({ ticketId, updatedAt, onStatusChange }: {
+  ticketId: number; updatedAt?: string; onStatusChange: () => void;
 }) {
   const [full, setFull] = useState<StaffTicketFull | null>(null);
   const [loading, setLoading] = useState(false);
@@ -253,19 +301,19 @@ function TicketDetailPanel({ ticketId, onStatusChange }: {
 
   const base = (process.env.NEXT_PUBLIC_API_ENDPOINT_URL ?? "").replace(/\/$/, "");
 
+  // Re-fetch when ticketId changes OR when polling detects the ticket was updated
   useEffect(() => {
     if (!ticketId) return;
-    setLoading(true);
-    setFull(null);
-    setSidebarMode(null);
+    const isInitial = full === null;
+    if (isInitial) setLoading(true);
     Promise.all([
       getStaffTicketFull(ticketId),
       getStaffList().catch(() => [] as StaffListItem[]),
     ])
       .then(([ticketData, staff]) => { setFull(ticketData); setStaffList(staff); })
-      .catch(() => toast.error("Failed to load ticket."))
+      .catch(() => { if (isInitial) toast.error("Failed to load ticket."); })
       .finally(() => setLoading(false));
-  }, [ticketId]);
+  }, [ticketId, updatedAt]);
 
   function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
     const imageItems = Array.from(e.clipboardData.items).filter((item) =>
@@ -617,6 +665,14 @@ export function TicketSection() {
   const [sortBy, setSortBy] = useState<"date" | "priority">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [readMap, setReadMap] = useState<Record<number, string>>(getReadMap);
+
+  function selectTicket(id: number) {
+    setSelectedId(id);
+    markAsRead(id);
+    // Update state directly instead of round-tripping through localStorage
+    setReadMap((prev) => ({ ...prev, [id]: new Date().toISOString() }));
+  }
 
   // Fingerprint: TicketID → UpdatedAt (for change detection)
   const fingerprintRef = useRef<Record<number, string>>({});
@@ -630,7 +686,7 @@ export function TicketSection() {
       setTickets(data);
       if (!selectedId && data.length > 0) {
         const first = data.find((t) => t.Status !== "Closed") ?? data[0];
-        setSelectedId(first.TicketID);
+        selectTicket(first.TicketID);
       }
       // Seed the fingerprint on first load (no beep)
       const fp: Record<number, string> = {};
@@ -646,10 +702,11 @@ export function TicketSection() {
 
   useEffect(() => { load(); }, []);
 
-  // Background polling — beep on new tickets or ticket updates
+  // Background polling — beep on new/updated tickets, always sync list
   useEffect(() => {
-    const interval = setInterval(async () => {
+    const poll = async () => {
       if (isFirstPollRef.current) return;
+      if (document.hidden) return;
       try {
         const data = await getStaffTickets();
         const prev = fingerprintRef.current;
@@ -657,10 +714,9 @@ export function TicketSection() {
 
         for (const t of data) {
           if (!(t.TicketID in prev)) {
-            changed = true; // new ticket
+            changed = true;
             break;
           }
-          // UpdatedAt changes when a reply is added or status changes
           if (prev[t.TicketID] !== (t.UpdatedAt ?? t.CreatedAt)) {
             changed = true;
             break;
@@ -669,26 +725,32 @@ export function TicketSection() {
 
         if (changed) {
           playBeep();
-          setTickets(data);
         }
 
+        // Always update the ticket list and fingerprint
+        setTickets(data);
         const fp: Record<number, string> = {};
         data.forEach((t) => { fp[t.TicketID] = t.UpdatedAt ?? t.CreatedAt; });
         fingerprintRef.current = fp;
       } catch {
         // Silently ignore poll errors
       }
-    }, 30000);
+    };
 
+    const interval = setInterval(poll, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  const unreadCount = tickets.filter((t) => isUnread(t, readMap)).length;
 
   const filtered = (statusFilter === "all" ? tickets : tickets.filter((t) => t.Status === statusFilter))
     .slice()
     .sort((a, b) => {
       let cmp = 0;
       if (sortBy === "date") {
-        cmp = new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime();
+        const aTime = a.LastReplyAt ?? a.UpdatedAt ?? a.CreatedAt;
+        const bTime = b.LastReplyAt ?? b.UpdatedAt ?? b.CreatedAt;
+        cmp = new Date(aTime).getTime() - new Date(bTime).getTime();
       } else {
         const pa = PRIORITY_ORDER[a.Priority?.toLowerCase()] ?? 0;
         const pb = PRIORITY_ORDER[b.Priority?.toLowerCase()] ?? 0;
@@ -704,7 +766,14 @@ export function TicketSection() {
       <div className="w-72 shrink-0 flex flex-col border-r border-border">
         <div className="px-4 py-3 border-b border-border flex flex-col gap-2 shrink-0">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-semibold text-sm">Support Tickets</h2>
+            <h2 className="font-semibold text-sm">
+              Support Tickets
+              {unreadCount > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-blue-500 text-white text-[10px] font-bold">
+                  {unreadCount}
+                </span>
+              )}
+            </h2>
             <div className="flex items-center gap-1">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
@@ -759,7 +828,8 @@ export function TicketSection() {
                 key={t.TicketID}
                 ticket={t}
                 selected={selectedId === t.TicketID}
-                onClick={() => setSelectedId(t.TicketID)}
+                unread={isUnread(t, readMap)}
+                onClick={() => selectTicket(t.TicketID)}
               />
             ))
           )}
@@ -775,6 +845,7 @@ export function TicketSection() {
           <TicketDetailPanel
             key={selectedId}
             ticketId={selectedId}
+            updatedAt={tickets.find((t) => t.TicketID === selectedId)?.UpdatedAt ?? undefined}
             onStatusChange={load}
           />
         ) : (

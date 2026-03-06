@@ -2,6 +2,7 @@ import {
   getShopCategories,
   addShopCategory,
   updateShopCategory,
+  deleteShopCategory as deleteShopCategorySvc,
   getShopItems,
   addShopItem,
   updateShopItem,
@@ -35,6 +36,11 @@ export async function createCategory(req, res) {
 
 export async function patchCategory(req, res) {
   const result = await updateShopCategory(req.params.idx, req.body, buildCtx(req));
+  res.json(result);
+}
+
+export async function deleteCategory(req, res) {
+  const result = await deleteShopCategorySvc(req.params.idx, buildCtx(req));
   res.json(result);
 }
 

@@ -5,6 +5,12 @@ import Image from "next/image";
 
 import MaxWidthWrapper from "./maxwidthwrapper";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/context/PublicConfigContext";
 import { useLanguage, useT } from "@/context/LanguageContext";
@@ -64,21 +70,53 @@ const NavBar = () => {
 
             {/* Auth Section */}
             <div className="flex items-center gap-2">
-              {/* Language switcher — cycles through admin-enabled locales */}
+              {/* Language switcher — dropdown for 3+, cycle for 2 */}
               {(config?.enabledLocales?.length ?? 0) > 1 && (() => {
                 const langs = config!.enabledLocales;
-                const idx = langs.findIndex((l) => l.code === lang);
-                const next = langs[(idx + 1) % langs.length];
+                const current = langs.find((l) => l.code === lang);
+                const currentDisplay = current?.displayName ?? lang.toUpperCase();
+
+                // 2 locales: simple toggle
+                if (langs.length === 2) {
+                  const next = langs.find((l) => l.code !== lang) ?? langs[0];
+                  return (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setLang(next.code)}
+                      className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2"
+                      title={`Switch to ${next.displayName}`}
+                    >
+                      {next.displayName}
+                    </Button>
+                  );
+                }
+
+                // 3+ locales: dropdown
                 return (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setLang(next.code as Parameters<typeof setLang>[0])}
-                    className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2"
-                    title={`Switch to ${next.displayName}`}
-                  >
-                    {next.displayName}
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2 gap-1"
+                      >
+                        {currentDisplay}
+                        <span className="text-[10px] opacity-60">▼</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-30">
+                      {langs.map((l) => (
+                        <DropdownMenuItem
+                          key={l.code}
+                          onClick={() => setLang(l.code)}
+                          className={l.code === lang ? "font-semibold" : ""}
+                        >
+                          {l.displayName}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 );
               })()}
 

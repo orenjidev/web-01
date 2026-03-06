@@ -16,6 +16,7 @@
  * =====================================================
  */
 import { Router } from "express";
+import { doubleCsrfProtection, generateCsrfToken } from "../middlewares/csrf.middleware.js";
 
 import authRoutes from "./auth.routes.js";
 import accountRoutes from "./account.routes.js";
@@ -35,6 +36,23 @@ import downloadRoutes from "../routes/download.routes.js";
 import adminPanelRoutes from "./admin-panel/index.js";
 
 const router = Router();
+
+// CSRF token endpoint — must be GET and registered BEFORE the protection middleware
+router.get("/csrf-token", (req, res) => {
+  res.json({ token: generateCsrfToken(req, res) });
+});
+
+// Routes exempt from CSRF (public, non-destructive)
+const CSRF_EXEMPT = [/^\/download\/\d+\/click$/];
+
+// Apply CSRF protection to all state-mutating requests
+router.use((req, res, next) => {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    if (CSRF_EXEMPT.some((re) => re.test(req.path))) return next();
+    return doubleCsrfProtection(req, res, next);
+  }
+  next();
+});
 
 /**
  * -----------------------------------------------------

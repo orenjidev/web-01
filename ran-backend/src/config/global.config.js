@@ -12,6 +12,6 @@ export const GlobalConfig = Object.freeze({
   },
 
   security: {
-    trustProxy: true,
+    trustProxy: 1,
   },
 });

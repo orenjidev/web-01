@@ -312,6 +312,9 @@ export function DownloadSection() {
                     <th className="px-3 py-2 text-center font-medium text-muted-foreground">
                       Visible
                     </th>
+                    <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+                      Clicks
+                    </th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                       Date
                     </th>
@@ -353,6 +356,9 @@ export function DownloadSection() {
                         ) : (
                           <span className="text-red-500 font-medium">No</span>
                         )}
+                      </td>
+                      <td className="px-3 py-2 text-center font-mono text-xs text-muted-foreground">
+                        {dl.ClickCount ?? 0}
                       </td>
                       <td className="px-3 py-2 text-muted-foreground text-xs">
                         {new Date(dl.CreatedAt).toLocaleDateString()}

@@ -27,6 +27,17 @@ const registerLimiter = rateLimit({
   },
 });
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const MSG = getMessage(req.ctx?.lang);
+    res.status(429).json({ ok: false, message: MSG.RATE_LIMIT.LOGIN });
+  },
+});
+
 const router = Router();
 
 /**
@@ -71,7 +82,7 @@ const router = Router();
  *   - Account disabled
  *   - Account blocked
  */
-router.post("/login", authService.loginController);
+router.post("/login", loginLimiter, authService.loginController);
 
 /**
  * -----------------------------------------------------

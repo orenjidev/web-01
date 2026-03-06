@@ -24,7 +24,22 @@ import {
   requireStaff,
   requireTicketSystem,
 } from "../middlewares/auth.middleware.js";
-import { ticketUpload } from "../middlewares/upload.middleware.js";
+import { ticketUpload, validateMimeType } from "../middlewares/upload.middleware.js";
+
+const TICKET_ALLOWED_MIMES = ["image/jpeg", "image/png", "application/pdf"];
+
+async function validateTicketFiles(req, res, next) {
+  try {
+    if (req.files?.length) {
+      for (const file of req.files) {
+        await validateMimeType(file, TICKET_ALLOWED_MIMES);
+      }
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
 
 const router = Router();
 
@@ -90,6 +105,7 @@ router.post(
   "/create",
   requireAuth,
   ticketUpload.array("attachments", 5),
+  validateTicketFiles,
   ticketController.createTicketController,
 );
 
@@ -202,6 +218,7 @@ router.post(
   "/:ticketId/reply",
   requireAuth,
   ticketUpload.array("attachments", 5),
+  validateTicketFiles,
   ticketController.addTicketReplyController,
 );
 
@@ -359,6 +376,7 @@ router.put(
 router.post(
   "/staff/:ticketId/reply",
   ticketUpload.array("attachments", 5),
+  validateTicketFiles,
   ticketController.addStaffReplyController,
 );
 

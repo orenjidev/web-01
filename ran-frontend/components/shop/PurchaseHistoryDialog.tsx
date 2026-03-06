@@ -25,20 +25,23 @@ export default function PurchaseHistoryDialog({ open, onOpenChange }: Props) {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const [startDate, setStartDate] = useState(todayString());
-  const [endDate, setEndDate] = useState(todayString());
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const pageSize = 25;
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);
 
-  const loadHistory = async (customPage?: number) => {
+  const loadHistory = async (customPage?: number, filters?: { start: string; end: string }) => {
     setLoading(true);
+
+    const s = filters?.start ?? startDate;
+    const e = filters?.end ?? endDate;
 
     const res = await getPurchaseHistory({
       page: customPage ?? page,
       pageSize,
-      startDate,
-      endDate,
+      startDate: s || undefined,
+      endDate: e || undefined,
     });
 
     if (res.ok) {
@@ -49,14 +52,13 @@ export default function PurchaseHistoryDialog({ open, onOpenChange }: Props) {
     setLoading(false);
   };
 
-  // Reset dates & page when dialog opens
+  // Load all history (no date filter) when dialog opens
   useEffect(() => {
     if (open) {
-      const today = todayString();
-      setStartDate(today);
-      setEndDate(today);
+      setStartDate("");
+      setEndDate("");
       setPage(1);
-      loadHistory(1);
+      loadHistory(1, { start: "", end: "" });
     }
   }, [open]);
 

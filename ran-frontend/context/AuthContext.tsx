@@ -6,8 +6,10 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 
+import { useRouter } from "next/navigation";
 import { fetchUserDetails, logoutUser, type Account } from "@/lib/auth";
 
 /* =====================================================
@@ -32,6 +34,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Account | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
+  const redirecting = useRef(false);
 
   /* -----------------------------------------------------
      Refresh session from backend
@@ -67,6 +71,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clear();
     }
   }, [clear]);
+
+  /* -----------------------------------------------------
+     Listen for session-expired events from apiFetch
+  ----------------------------------------------------- */
+  useEffect(() => {
+    const handleExpired = () => {
+      if (redirecting.current) return;
+      redirecting.current = true;
+      setUser(null);
+      router.replace("/login");
+      setTimeout(() => { redirecting.current = false; }, 3000);
+    };
+
+    window.addEventListener("auth:expired", handleExpired);
+    return () => window.removeEventListener("auth:expired", handleExpired);
+  }, [router]);
 
   /* -----------------------------------------------------
      Initial session check on app load

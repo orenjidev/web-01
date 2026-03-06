@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Ban } from "lucide-react";
+import { Ban, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import ShopCard from "@/components/shop-card/shopcard";
 import { ShopCardSkeleton } from "@/components/shop-card/shopcardskeleton";
 import { ComboboxDemo } from "@/components/reusable/combobox";
+import CartDrawer from "@/components/shop/CartDrawer";
 
 import {
   Card,
@@ -30,6 +31,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/context/PublicConfigContext";
 import { useT } from "@/context/LanguageContext";
+import { CartProvider, useCart } from "@/context/CartContext";
 import {
   PriceType,
   ShopCategory,
@@ -42,22 +44,15 @@ import { Button } from "@/components/ui/button";
 import PurchaseHistoryDialog from "@/components/shop/PurchaseHistoryDialog";
 
 /* =====================================================
-   Helpers
+   Inner Page (needs CartContext)
 ===================================================== */
 
-function getPriceTypeLabel(priceType: PriceType, premiumLabel: string, voteLabel: string): string {
-  return priceType === PriceType.Premium ? premiumLabel : voteLabel;
-}
-
-/* =====================================================
-   Page
-===================================================== */
-
-const ItemShopPage = () => {
+function ItemShopInner() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refresh } = useAuth();
   const { config, loadingConfig } = usePublicConfig();
   const t = useT();
+  const { addItem, getItemQty, itemCount } = useCart();
 
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<ShopCategory[]>([]);
@@ -65,10 +60,14 @@ const ItemShopPage = () => {
   const [selected, setSelected] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const shown = useRef(false);
   const pageSize = 9;
   const isAuthed = Boolean(user);
+
+  const ePointsLabel = config?.ePointsName ?? "E-Points";
+  const vPointsLabel = (config as any)?.vPointsName ?? "V-Points";
 
   /* -----------------------------------------------------
      Toast once
@@ -98,7 +97,6 @@ const ItemShopPage = () => {
     try {
       const [cats, map] = await Promise.all([getCategory(), getShopItemMap()]);
 
-      // Force new references explicitly
       setCategories([...cats]);
       setItemMap({ ...map });
     } catch (err) {
@@ -126,7 +124,7 @@ const ItemShopPage = () => {
   }, [selected]);
 
   /* -----------------------------------------------------
-     Purchase Handler
+     Purchase Handler (Buy Now)
   ----------------------------------------------------- */
 
   const handlePurchase = async (id: number) => {
@@ -139,9 +137,8 @@ const ItemShopPage = () => {
       }
 
       toast.success(result.message || "Purchase successful");
-      //await loadShop();
+      await refresh();
 
-      // Seamless local stock update
       setItemMap((prev) => {
         const updated = { ...prev };
 
@@ -159,6 +156,33 @@ const ItemShopPage = () => {
       console.error(err);
       toast.error("Unexpected error occurred.");
     }
+  };
+
+  /* -----------------------------------------------------
+     Add to Cart Handler
+  ----------------------------------------------------- */
+
+  const handleAddToCart = (item: ShopItem) => {
+    addItem({
+      id: item.id,
+      itemName: item.itemName,
+      price: item.price,
+      priceType: item.priceType,
+      stock: item.stock,
+      iconUrl: item.iconUrl,
+      iconType: item.iconType,
+      iconMain: item.iconMain,
+      iconSub: item.iconSub,
+    });
+    toast.success(`${item.itemName} added to cart`);
+  };
+
+  /* -----------------------------------------------------
+     Cart Purchased Handler
+  ----------------------------------------------------- */
+
+  const handleCartPurchased = () => {
+    loadShop();
   };
 
   /* -----------------------------------------------------
@@ -261,7 +285,6 @@ const ItemShopPage = () => {
   const totalPages = Math.ceil(filteredItems.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
 
-  // Force fresh objects for rendering
   const paginatedItems = filteredItems
     .slice(startIndex, startIndex + pageSize)
     .map((item) => ({ ...item }));
@@ -282,10 +305,25 @@ const ItemShopPage = () => {
 
         <CardContent>
           <div className="pb-4">
-            <div className="flex justify-between">
-              <Button onClick={() => setHistoryOpen(true)}>
-                {t.itemShop.viewHistory}
-              </Button>
+            <div className="flex justify-between gap-2">
+              <div className="flex gap-2">
+                <Button onClick={() => setHistoryOpen(true)}>
+                  {t.itemShop.viewHistory}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCartOpen(true)}
+                  className="relative"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-1.5" />
+                  Cart
+                  {itemCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {itemCount}
+                    </span>
+                  )}
+                </Button>
+              </div>
               <ComboboxDemo
                 options={dropdownOptions}
                 value={selected}
@@ -302,7 +340,7 @@ const ItemShopPage = () => {
             {paginatedItems.length > 0 ? (
               paginatedItems.map((item, i) => (
                 <ShopCard
-                  key={`${i}`} // critical: include stock in key
+                  key={`${item.id}-${item.stock}`}
                   itemName={item.itemName}
                   category={
                     categories.find((c) => c.categorynum === item.category)
@@ -313,11 +351,18 @@ const ItemShopPage = () => {
                   iconMain={item.iconMain}
                   iconSub={item.iconSub}
                   price={item.price}
-                  purchaseType={getPriceTypeLabel(item.priceType, t.itemShop.premiumPoints, t.itemShop.votePoints)}
+                  purchaseType={
+                    item.priceType === PriceType.Premium
+                      ? ePointsLabel
+                      : vPointsLabel
+                  }
+                  isPremium={item.priceType === PriceType.Premium}
                   stock={item.stock}
                   isBox={item.isBox}
                   boxContent={item.boxContent}
+                  cartQty={getItemQty(item.id)}
                   onPurchase={() => handlePurchase(item.id)}
+                  onAddToCart={() => handleAddToCart(item)}
                 />
               ))
             ) : (
@@ -374,7 +419,27 @@ const ItemShopPage = () => {
           )}
         </CardContent>
       </Card>
+
+      <CartDrawer
+        open={cartOpen}
+        onOpenChange={setCartOpen}
+        ePointsLabel={ePointsLabel}
+        vPointsLabel={vPointsLabel}
+        onPurchased={handleCartPurchased}
+      />
     </div>
+  );
+}
+
+/* =====================================================
+   Page Wrapper (provides CartContext)
+===================================================== */
+
+const ItemShopPage = () => {
+  return (
+    <CartProvider>
+      <ItemShopInner />
+    </CartProvider>
   );
 };
 

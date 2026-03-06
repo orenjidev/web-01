@@ -100,6 +100,9 @@ export default function TicketsPage() {
 
   const openCount = tickets.filter((t) => t.status === "Open").length;
   const closedCount = tickets.filter((t) => t.status === "Closed").length;
+  const needsReplyCount = tickets.filter(
+    (t) => t.lastReplyIsStaff && t.status !== "Closed",
+  ).length;
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -128,7 +131,7 @@ export default function TicketsPage() {
 
       {/* Stats */}
       {!loading && tickets.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
@@ -145,6 +148,17 @@ export default function TicketsPage() {
               </p>
               <p className="text-2xl font-bold mt-1 tabular-nums text-emerald-500">
                 {openCount}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                Needs Reply
+              </p>
+              <p className={`text-2xl font-bold mt-1 tabular-nums ${needsReplyCount > 0 ? "text-blue-500" : "text-muted-foreground"}`}>
+                {needsReplyCount}
               </p>
             </CardContent>
           </Card>

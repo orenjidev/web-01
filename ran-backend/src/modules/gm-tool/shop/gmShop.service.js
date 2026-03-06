@@ -72,6 +72,21 @@ export async function updateShopCategory(idx, body, ctx = {}) {
   return { ok: true };
 }
 
+export async function deleteShopCategory(idx, ctx = {}) {
+  const pool = await getShopPool();
+
+  const result = await pool
+    .request()
+    .input("idx", sql.Int, Number(idx))
+    .query(`DELETE FROM ShopCategory WHERE idx = @idx`);
+
+  if (result.rowsAffected[0] === 0) {
+    return { ok: false, message: "CATEGORY_NOT_FOUND" };
+  }
+
+  return { ok: true };
+}
+
 /* =====================================================
    SHOP ITEMS  (ShopDB → ShopItemMap)
    Legacy: GetShopItem, SaveShopItem, AddShopItem, DisableShopItem

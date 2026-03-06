@@ -1,6 +1,6 @@
 import { baseServerConfig } from "../config/server.config.js";
 import { getShopPool } from "../loaders/mssql.js";
-import { purchaseShopItemTx } from "../repositories/shopPurchase.repo.js";
+import { purchaseShopItemTx, purchaseCartTx } from "../repositories/shopPurchase.repo.js";
 import {
   getCachedCategories,
   getCachedItems,
@@ -201,6 +201,10 @@ export const purchaseShopItem = async (payload) => {
   return purchaseShopItemTx(payload);
 };
 
+export const purchaseCart = async (payload) => {
+  return purchaseCartTx(payload);
+};
+
 // History
 export const getPurchaseHistoryService = async ({
   userId,
@@ -225,8 +229,11 @@ export const getPurchaseHistoryService = async ({
   }
 
   if (endDate) {
-    request.input("EndDate", sql.DateTime, new Date(endDate));
-    dateFilter += " AND Date <= @EndDate";
+    // Add 1 day so "2026-03-06" covers the entire day (up to 2026-03-07 00:00:00)
+    const endPlusOne = new Date(endDate);
+    endPlusOne.setUTCDate(endPlusOne.getUTCDate() + 1);
+    request.input("EndDate", sql.DateTime, endPlusOne);
+    dateFilter += " AND Date < @EndDate";
   }
 
   const result = await request.query(`

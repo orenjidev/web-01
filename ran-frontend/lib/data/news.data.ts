@@ -1,7 +1,4 @@
-/* =====================================================
-   Config
-===================================================== */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT_URL;
+import { apiFetch } from "@/lib/apiFetch";
 
 /* =====================================================
    News domain types (UI CONTRACT)
@@ -43,27 +40,6 @@ interface BackendResponse<T> {
 }
 
 /* =====================================================
-   Internal helper (LIST ONLY)
-===================================================== */
-async function apiFetch<T>(path: string): Promise<T> {
-  if (!API_BASE_URL) {
-    throw new Error("API endpoint is not configured");
-  }
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Request failed");
-  }
-
-  return res.json() as Promise<T>;
-}
-
-/* =====================================================
    Public Accessors
 ===================================================== */
 
@@ -96,40 +72,28 @@ export async function getNews(): Promise<NewsItem[]> {
  * - Other errors throw
  */
 export async function getSingleNews(id: number): Promise<NewsItem | undefined> {
-  if (!API_BASE_URL) {
-    throw new Error("API endpoint is not configured");
-  }
+  try {
+    const json = await apiFetch<BackendResponse<BackendNewsDetailItem>>(
+      `/api/news/${id}`,
+    );
 
-  const res = await fetch(`${API_BASE_URL}/api/news/${id}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (res.status === 404) {
+    return {
+      id: json.data.ID,
+      title: json.data.Title,
+      category: json.data.Type,
+      author: json.data.Author ?? "Admin",
+      published: json.data.CreatedAt,
+      content: (() => {
+        try {
+          return decodeURIComponent(escape(atob(json.data.LongDescriptionBase64)));
+        } catch {
+          return atob(json.data.LongDescriptionBase64);
+        }
+      })(),
+    };
+  } catch {
     return undefined;
   }
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Request failed");
-  }
-
-  const json = (await res.json()) as BackendResponse<BackendNewsDetailItem>;
-
-  return {
-    id: json.data.ID,
-    title: json.data.Title,
-    category: json.data.Type,
-    author: json.data.Author ?? "Admin",
-    published: json.data.CreatedAt,
-    content: (() => {
-      try {
-        return decodeURIComponent(escape(atob(json.data.LongDescriptionBase64)));
-      } catch {
-        return atob(json.data.LongDescriptionBase64);
-      }
-    })(),
-  };
 }
 
 /**

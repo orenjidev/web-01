@@ -1,6 +1,5 @@
-/* =====================================================
-   Config
-===================================================== */
+import { apiFetch } from "@/lib/apiFetch";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT_URL;
 
 /**
@@ -105,32 +104,6 @@ const MOCK_ITEMS: ShopItem[] = [
     iconSub: 4,
   },
 ];
-
-/* =====================================================
-   Internal API helper
-===================================================== */
-
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  if (!API_BASE_URL) {
-    throw new Error("API endpoint is not configured");
-  }
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    cache: "no-store", // ← THIS IS THE FIX
-    ...init,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Request failed");
-  }
-
-  return res.json() as Promise<T>;
-}
 
 /* =====================================================
    Public Data Access (USED BY UI)
@@ -242,6 +215,15 @@ export async function purchaseShopItem(
   return apiFetch<{ ok: boolean; message: string }>("/api/shop/purchase", {
     method: "POST",
     body: JSON.stringify({ productNum }),
+  });
+}
+
+export async function purchaseCart(
+  items: { productNum: number; quantity: number }[],
+): Promise<{ ok: boolean; message: string }> {
+  return apiFetch<{ ok: boolean; message: string }>("/api/shop/purchase-cart", {
+    method: "POST",
+    body: JSON.stringify({ items }),
   });
 }
 

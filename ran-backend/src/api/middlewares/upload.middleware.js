@@ -1,6 +1,7 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { fileTypeFromFile } from "file-type";
 
 function makeStorage(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -25,6 +26,16 @@ export const ticketUpload = multer({
     }
   },
 });
+
+export async function validateMimeType(file, allowedMimes) {
+  const detected = await fileTypeFromFile(file.path);
+  if (!detected || !allowedMimes.includes(detected.mime)) {
+    fs.unlinkSync(file.path);
+    const err = new Error("Invalid file content");
+    err.status = 400;
+    throw err;
+  }
+}
 
 export const sliderUpload = multer({
   storage: makeStorage(path.join(process.cwd(), "uploads/slider")),

@@ -33,6 +33,7 @@ export type AdminSection =
   | "ticket.list"
   | "shop.categories"
   | "shop.items"
+  | "shop.analytics"
   | "news"
   | "downloads"
   | "server.config"
@@ -99,6 +100,7 @@ const data = {
       items: [
         { title: "Shop Categories", action: "shop.categories" as AdminSection },
         { title: "Shop Items", action: "shop.items" as AdminSection },
+        { title: "Shop Analytics", action: "shop.analytics" as AdminSection },
       ],
     },
     {
