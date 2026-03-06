@@ -9,10 +9,12 @@ import { Input } from "../input"
 import { Label } from "../label"
 import { Popover, PopoverContent, PopoverTrigger } from "../popover"
 import { useToast } from "./hooks/use-toast"
-import { EditorActions, useEditor } from "./index"
+import { EditorActions } from "./index"
+import { useEditorState, useEditorDispatch } from "./store/editor-store"
 
 export function LinkPopover() {
-  const [state, dispatch] = useEditor()
+  const state = useEditorState()
+  const dispatch = useEditorDispatch()
   const { toast } = useToast()
   const [hrefInput, setHrefInput] = useState("")
   const [isOpen, setIsOpen] = useState(false)
@@ -32,6 +34,8 @@ export function LinkPopover() {
       bold: boolean
       italic: boolean
       underline: boolean
+      strikethrough: boolean
+      code: boolean
     }
     elementType?:
       | "p"
@@ -43,6 +47,8 @@ export function LinkPopover() {
       | "h6"
       | "code"
       | "blockquote"
+      | "ol"
+      | "li"
       | null
     className?: string | null
   } | null>(null)

@@ -1,5 +1,3 @@
-import { id } from "date-fns/locale"
-
 import { ContainerNode, EditorNode, TextNode } from "./types"
 
 /**

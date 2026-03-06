@@ -1,4 +1,4 @@
-import { getNodeTextContent, hasInlineChildren, TextNode } from "../types"
+import { getNodeTextContent, hasInlineChildren, InlineText, TextNode } from "../types"
 
 /**
  * Split a text node into inline segments based on selection range
@@ -45,8 +45,6 @@ export function convertToInlineFormat(node: TextNode): TextNode {
     content: undefined, // Remove content property
     children: [
       {
-        id: `${node.id}-text-${Date.now()}`,
-        type: "text",
         content: content,
       },
     ],
@@ -80,13 +78,11 @@ export function applyFormatting(
   )
 
   // Build new children array
-  const newChildren: TextNode[] = []
+  const newChildren: InlineText[] = []
 
   // Add "before" text if it exists
   if (before) {
     newChildren.push({
-      id: `${node.id}-before-${Date.now()}`,
-      type: "text",
       content: before,
     })
   }
@@ -94,20 +90,14 @@ export function applyFormatting(
   // Add formatted selection as a span
   if (selected) {
     newChildren.push({
-      id: `${node.id}-span-${Date.now()}`,
-      type: "span",
       content: selected,
-      attributes: {
-        className: className,
-      },
+      className: className,
     })
   }
 
   // Add "after" text if it exists
   if (after) {
     newChildren.push({
-      id: `${node.id}-after-${Date.now()}`,
-      type: "text",
       content: after,
     })
   }
@@ -199,8 +189,8 @@ export function getFormattingAtPosition(
   for (const child of node.children!) {
     const childLength = (child.content || "").length
     if (offset >= currentOffset && offset <= currentOffset + childLength) {
-      return child.attributes?.className
-        ? [String(child.attributes.className)]
+      return child.className
+        ? [String(child.className)]
         : []
     }
     currentOffset += childLength

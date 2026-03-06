@@ -1326,8 +1326,7 @@ function LocalesEditorTab({
     setLocaleMeta((prev) => ({
       ...prev,
       [lang]: {
-        enabled: true,
-        displayName: lang.toUpperCase(),
+        ...{ enabled: true, displayName: lang.toUpperCase() },
         ...prev[lang],
         ...patch,
       },

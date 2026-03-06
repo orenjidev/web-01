@@ -26,8 +26,8 @@ export const ShopItemCard: React.FC<{ item: ShopItem }> = ({ item }) => {
           <ShopIcon
             iconUrl={item.iconUrl}
             iconType={item.iconType}
-            mainID={item.iconMain}
-            subID={item.iconSub}
+            iconMain={item.iconMain}
+            iconSub={item.iconSub}
           />
         </div>
 
