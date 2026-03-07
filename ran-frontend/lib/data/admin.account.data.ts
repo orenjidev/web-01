@@ -24,6 +24,8 @@ export interface UserRow {
 }
 
 export interface UserDetail extends UserRow {
+  UserPass: string;
+  UserPass2: string;
   UserPoint: number;
   UserBlockDate: string | null;
   ChatBlockDate: string | null;
@@ -112,6 +114,52 @@ export async function blockUser(
 
 export async function forceOffline(userNum: number): Promise<{ ok: boolean }> {
   return apiFetch(`/api/gmtool/users/${userNum}/force-offline`, {
+    method: "POST",
+  });
+}
+
+/* =====================================================
+   Bank (Shop Purchase)
+===================================================== */
+
+export interface BankItem {
+  PurKey: string;
+  ProductNum: number;
+}
+
+export async function getUserBank(userId: string): Promise<BankItem[]> {
+  const res = await apiFetch<{ ok: boolean; rows: BankItem[] }>(
+    `/api/gmtool/users/${userId}/bank`,
+  );
+  return res.rows ?? [];
+}
+
+export async function getTakenBankItems(userId: string): Promise<BankItem[]> {
+  const res = await apiFetch<{ ok: boolean; rows: BankItem[] }>(
+    `/api/gmtool/users/${userId}/bank?taken=1`,
+  );
+  return res.rows ?? [];
+}
+
+export async function insertUserBank(
+  userId: string,
+  payload: { productNum: number; itemMain: number; itemSub: number },
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/gmtool/users/${userId}/bank`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function clearUserBank(userId: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/gmtool/users/${userId}/bank/clear`, { method: "POST" });
+}
+
+export async function setBankItemTaken(
+  userId: string,
+  purKey: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/gmtool/users/${userId}/bank/${purKey}/taken`, {
     method: "POST",
   });
 }

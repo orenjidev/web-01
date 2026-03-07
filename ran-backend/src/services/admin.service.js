@@ -503,6 +503,14 @@ export async function listTopups({ used }) {
   return result.recordset;
 }
 
+export async function setTopupUnused(idx) {
+  const pool = await getUserPool();
+  await pool
+    .request()
+    .input("idx", idx)
+    .query(`UPDATE TopUp SET Used = 0, UseDate = NULL WHERE idx = @idx`);
+}
+
 export async function generateTopups(count, value) {
   const pool = await getUserPool();
 

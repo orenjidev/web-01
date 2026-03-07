@@ -24,12 +24,14 @@ import {
   listTopupsController,
   listUserTopupsController,
   redeemTopupController,
+  setTopupUnusedController,
 } from "../controllers/topup.controllers.js";
 import {
   requireAuth,
   requireStaff,
   requireTopUpEnabled,
 } from "../middlewares/auth.middleware.js";
+import { gmActionLogMiddleware } from "../../modules/gm-tool/gmActionLog.middleware.js";
 
 const router = Router();
 
@@ -146,39 +148,12 @@ router.post("/redeem", requireAuth, redeemTopupController);
  *     error : "TOPUP_LIST_FAILED"
  *   }
  */
-router.get("/admin/list", requireStaff, listTopupsController);
-
-/**
- * -----------------------------------------------------
- * POST /api/topup/admin/generate
- * -----------------------------------------------------
- * Description:
- *   Generate new top-up codes.
- *
- * Auth:
- *   - Staff authentication required
- *
- * Request Body:
- *   - count : number (required, integer > 0)
- *   - value : number (required, integer > 0)
- *
- * Success Response:
- *   {
- *     success : true,
- *     message : "TOPUP_GENERATION_REQUESTED"
- *   }
- *
- * Error Responses:
- *   - 400 Bad Request
- *   {
- *     error : "INVALID_REQUEST"
- *   }
- *
- *   - 500 Internal Server Error
- *   {
- *     error : "TOPUP_GENERATE_FAILED"
- *   }
- */
-router.post("/admin/generate", requireStaff, generateTopupsController);
+const adminRouter = Router();
+adminRouter.use(requireStaff);
+adminRouter.use(gmActionLogMiddleware);
+adminRouter.get("/list", listTopupsController);
+adminRouter.post("/generate", generateTopupsController);
+adminRouter.patch("/:idx/unused", setTopupUnusedController);
+router.use("/admin", adminRouter);
 
 export default router;

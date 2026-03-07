@@ -33,11 +33,22 @@ import {
   getUser,
   updateUser,
   forceOffline,
+  getUserBank,
+  getTakenBankItems,
+  insertUserBank,
+  clearUserBank,
+  setBankItemTaken,
   type UserRow,
   type UserDetail,
   type UserSearchBy,
   type UpdateUserPayload,
+  type BankItem,
 } from "@/lib/data/admin.account.data";
+import {
+  getShopItems,
+  type ShopItem,
+} from "@/lib/data/admin.shop.data";
+import { en } from "@/lib/i18n/locales/en";
 
 /** Replicates backend encodePassword: MD5(plain.trim()) → hex → UPPERCASE → first 19 chars */
 function hashPassword(plain: string): string {
@@ -79,8 +90,6 @@ function CreateUserDialog({
     userPoint: "0",
   });
   const [loading, setLoading] = useState(false);
-  const [useMd5Pass, setUseMd5Pass] = useState(true);
-  const [useMd5Pass2, setUseMd5Pass2] = useState(true);
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -95,8 +104,8 @@ function CreateUserDialog({
     try {
       await createUser({
         userId: form.userId,
-        pass: useMd5Pass ? hashPassword(form.pass) : form.pass,
-        pass2: useMd5Pass2 ? hashPassword(form.pass2) : form.pass2,
+        pass: form.pass,
+        pass2: form.pass2,
         email: form.email,
         userType: Number(form.userType),
         chaRemain: Number(form.chaRemain),
@@ -127,8 +136,8 @@ function CreateUserDialog({
           <div className="space-y-1">
             <Label>Password <span className="text-destructive">*</span></Label>
             <div className="flex gap-2">
-              <Input type="password" placeholder="password" value={form.pass} onChange={set("pass")} className="flex-1" />
-              <Button type="button" size="sm" variant={useMd5Pass ? "default" : "outline"} onClick={() => setUseMd5Pass((v) => !v)} title="Toggle MD5 hashing">
+              <Input placeholder="password" value={form.pass} onChange={set("pass")} className="flex-1" autoComplete="off" />
+              <Button type="button" size="sm" variant="outline" onClick={() => setForm((f) => ({ ...f, pass: hashPassword(f.pass) }))} title="Convert to MD5">
                 MD5
               </Button>
             </div>
@@ -136,8 +145,8 @@ function CreateUserDialog({
           <div className="space-y-1">
             <Label>Secondary Password <span className="text-destructive">*</span></Label>
             <div className="flex gap-2">
-              <Input type="password" placeholder="secondary password" value={form.pass2} onChange={set("pass2")} className="flex-1" />
-              <Button type="button" size="sm" variant={useMd5Pass2 ? "default" : "outline"} onClick={() => setUseMd5Pass2((v) => !v)} title="Toggle MD5 hashing">
+              <Input placeholder="secondary password" value={form.pass2} onChange={set("pass2")} className="flex-1" autoComplete="off" />
+              <Button type="button" size="sm" variant="outline" onClick={() => setForm((f) => ({ ...f, pass2: hashPassword(f.pass2) }))} title="Convert to MD5">
                 MD5
               </Button>
             </div>
@@ -176,11 +185,12 @@ function CreateUserDialog({
    User Detail Dialog
 ───────────────────────────── */
 
-type UserTab = "info" | "edit";
+type UserTab = "info" | "edit" | "bank";
 
 const USER_TABS: { key: UserTab; label: string }[] = [
   { key: "info", label: "Info" },
   { key: "edit", label: "Edit" },
+  { key: "bank", label: "Bank" },
 ];
 
 export function UserDetailDialog({
@@ -190,12 +200,18 @@ export function UserDetailDialog({
   userNum: number | null;
   onClose: () => void;
 }) {
+  const t = en;
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [tab, setTab] = useState<UserTab>("info");
   const [actionLoading, setActionLoading] = useState(false);
-  const [useMd5Pass, setUseMd5Pass] = useState(true);
-  const [useMd5Pass2, setUseMd5Pass2] = useState(true);
+  const [bankItems, setBankItems] = useState<BankItem[]>([]);
+  const [takenItems, setTakenItems] = useState<BankItem[]>([]);
+  const [bankSubTab, setBankSubTab] = useState<"pending" | "taken">("pending");
+  const [bankLoading, setBankLoading] = useState(false);
+  const [shopItems, setShopItems] = useState<ShopItem[]>([]);
+  const [selectedProductNum, setSelectedProductNum] = useState<string>("");
+  const [insertLoading, setInsertLoading] = useState(false);
 
   const [editForm, setEditForm] = useState({
     userEmail: "",
@@ -224,8 +240,8 @@ export function UserDetailDialog({
         setDetail(d);
         setEditForm({
           userEmail: d.UserEmail ?? "",
-          userPass: "",
-          userPass2: "",
+          userPass: d.UserPass ?? "",
+          userPass2: d.UserPass2 ?? "",
           userType: String(d.UserType),
           chaRemain: String(d.ChaRemain),
           userPoint: String(d.UserPoint),
@@ -241,6 +257,19 @@ export function UserDetailDialog({
       .finally(() => setLoadingDetail(false));
   }, [open, userNum]);
 
+  useEffect(() => {
+    if (tab !== "bank" || !detail) return;
+    setBankLoading(true);
+    Promise.all([getUserBank(detail.UserID), getTakenBankItems(detail.UserID), getShopItems()])
+      .then(([bank, taken, items]) => {
+        setBankItems(bank);
+        setTakenItems(taken);
+        setShopItems(items);
+      })
+      .catch(() => toast.error(t.adminPanel.bank.toastLoadFail))
+      .finally(() => setBankLoading(false));
+  }, [tab, detail]);
+
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setEditForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -251,8 +280,8 @@ export function UserDetailDialog({
     try {
       const payload: UpdateUserPayload = {};
       if (editForm.userEmail !== "") payload.userEmail = editForm.userEmail;
-      if (editForm.userPass !== "") payload.userPass = useMd5Pass ? hashPassword(editForm.userPass) : editForm.userPass;
-      if (editForm.userPass2 !== "") payload.userPass2 = useMd5Pass2 ? hashPassword(editForm.userPass2) : editForm.userPass2;
+      if (editForm.userPass !== "") payload.userPass = editForm.userPass;
+      if (editForm.userPass2 !== "") payload.userPass2 = editForm.userPass2;
       if (editForm.userType !== "") payload.userType = Number(editForm.userType);
       if (editForm.chaRemain !== "") payload.chaRemain = Number(editForm.chaRemain);
       if (editForm.userPoint !== "") payload.userPoint = Number(editForm.userPoint);
@@ -286,8 +315,63 @@ export function UserDetailDialog({
     }
   }
 
+  async function handleClearBank() {
+    if (!detail) return;
+    setActionLoading(true);
+    try {
+      await clearUserBank(detail.UserID);
+      setBankItems([]);
+      toast.success(t.adminPanel.bank.toastCleared);
+    } catch {
+      toast.error(t.adminPanel.bank.toastClearFail);
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleMarkTaken(purKey: string) {
+    if (!detail) return;
+    setActionLoading(true);
+    try {
+      await setBankItemTaken(detail.UserID, purKey);
+      const moved = bankItems.find((i) => i.PurKey === purKey);
+      setBankItems((prev) => prev.filter((i) => i.PurKey !== purKey));
+      if (moved) setTakenItems((prev) => [moved, ...prev]);
+      toast.success(t.adminPanel.bank.toastMarkedTaken);
+    } catch {
+      toast.error(t.adminPanel.bank.toastMarkFail);
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleInsert() {
+    if (!detail || !selectedProductNum) return;
+    const item = shopItems.find((i) => i.ProductNum === Number(selectedProductNum));
+    if (!item) return;
+    setInsertLoading(true);
+    try {
+      await insertUserBank(detail.UserID, {
+        productNum: item.ProductNum,
+        itemMain: item.ItemMain,
+        itemSub: item.ItemSub,
+      });
+      toast.success(t.adminPanel.bank.toastInserted);
+      setSelectedProductNum("");
+      const fresh = await getUserBank(detail.UserID);
+      setBankItems(fresh);
+    } catch {
+      toast.error(t.adminPanel.bank.toastInsertFail);
+    } finally {
+      setInsertLoading(false);
+    }
+  }
+
   function handleClose() {
     setDetail(null);
+    setBankItems([]);
+    setTakenItems([]);
+    setBankSubTab("pending");
     onClose();
   }
 
@@ -385,17 +469,17 @@ export function UserDetailDialog({
                       <Input type="email" value={editForm.userEmail} onChange={setF("userEmail")} placeholder="user@example.com" />
                     </div>
                     <div className="space-y-1">
-                      <Label>New Password</Label>
+                      <Label>Password</Label>
                       <div className="flex gap-2">
-                        <Input type="text" value={editForm.userPass} onChange={setF("userPass")} placeholder="leave blank to keep" className="flex-1" autoComplete="off" />
-                        <Button type="button" size="sm" variant={useMd5Pass ? "default" : "outline"} onClick={() => setUseMd5Pass((v) => !v)} title="Toggle MD5 hashing">MD5</Button>
+                        <Input type="text" value={editForm.userPass} onChange={setF("userPass")} className="flex-1" autoComplete="off" />
+                        <Button type="button" size="sm" variant="outline" onClick={() => setEditForm((f) => ({ ...f, userPass: hashPassword(f.userPass) }))} title="Convert to MD5">MD5</Button>
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label>New Sec. Password</Label>
+                      <Label>Sec. Password</Label>
                       <div className="flex gap-2">
-                        <Input type="text" value={editForm.userPass2} onChange={setF("userPass2")} placeholder="leave blank to keep" className="flex-1" autoComplete="off" />
-                        <Button type="button" size="sm" variant={useMd5Pass2 ? "default" : "outline"} onClick={() => setUseMd5Pass2((v) => !v)} title="Toggle MD5 hashing">MD5</Button>
+                        <Input type="text" value={editForm.userPass2} onChange={setF("userPass2")} className="flex-1" autoComplete="off" />
+                        <Button type="button" size="sm" variant="outline" onClick={() => setEditForm((f) => ({ ...f, userPass2: hashPassword(f.userPass2) }))} title="Convert to MD5">MD5</Button>
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -441,6 +525,142 @@ export function UserDetailDialog({
                     </Button>
                   </div>
                 </form>
+              )}
+
+              {/* ── Bank Tab ── */}
+              {tab === "bank" && (
+                <div className="space-y-4 text-sm">
+                  {/* Sub-tab bar */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1">
+                      {(["pending", "taken"] as const).map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => setBankSubTab(st)}
+                          className={`px-3 py-1 text-xs font-medium rounded transition-colors border ${
+                            bankSubTab === st
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {st === "pending" ? `In Bank (${bankItems.length})` : `Taken (${takenItems.length})`}
+                        </button>
+                      ))}
+                    </div>
+                    {bankSubTab === "pending" && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleClearBank}
+                        disabled={actionLoading || bankLoading || bankItems.length === 0}
+                      >
+                        {t.adminPanel.bank.clearAll}
+                      </Button>
+                    )}
+                  </div>
+
+                  {bankLoading ? (
+                    <div className="space-y-2">
+                      {[1, 2, 3].map((i) => <Skeleton key={i} className="h-6 w-full" />)}
+                    </div>
+                  ) : bankSubTab === "pending" ? (
+                    bankItems.length === 0 ? (
+                      <p className="text-muted-foreground text-xs">{t.adminPanel.bank.noItems}</p>
+                    ) : (
+                      <table className="w-full text-xs border-separate border-spacing-y-0.5">
+                        <thead>
+                          <tr className="text-left text-muted-foreground">
+                            <th className="pb-1 font-medium">{t.adminPanel.bank.colPurKey}</th>
+                            <th className="pb-1 font-medium">{t.adminPanel.bank.colItem}</th>
+                            <th className="pb-1"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bankItems.map((item) => {
+                            const shopItem = shopItems.find((s) => s.ProductNum === item.ProductNum);
+                            return (
+                              <tr key={item.PurKey} className="border-b border-border">
+                                <td className="py-1 font-mono pr-3">{item.PurKey.slice(0, 8)}…</td>
+                                <td className="py-1 pr-3">
+                                  {shopItem ? (
+                                    <span>{shopItem.ItemName} <span className="text-muted-foreground">(#{item.ProductNum})</span></span>
+                                  ) : (
+                                    <span className="text-muted-foreground">#{item.ProductNum}</span>
+                                  )}
+                                </td>
+                                <td className="py-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleMarkTaken(item.PurKey)}
+                                    disabled={actionLoading}
+                                  >
+                                    {t.adminPanel.bank.markTaken}
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )
+                  ) : (
+                    takenItems.length === 0 ? (
+                      <p className="text-muted-foreground text-xs">No taken items.</p>
+                    ) : (
+                      <table className="w-full text-xs border-separate border-spacing-y-0.5">
+                        <thead>
+                          <tr className="text-left text-muted-foreground">
+                            <th className="pb-1 font-medium">{t.adminPanel.bank.colPurKey}</th>
+                            <th className="pb-1 font-medium">{t.adminPanel.bank.colItem}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {takenItems.map((item) => {
+                            const shopItem = shopItems.find((s) => s.ProductNum === item.ProductNum);
+                            return (
+                              <tr key={item.PurKey} className="border-b border-border">
+                                <td className="py-1 font-mono pr-3">{item.PurKey.slice(0, 8)}…</td>
+                                <td className="py-1 pr-3">
+                                  {shopItem ? (
+                                    <span>{shopItem.ItemName} <span className="text-muted-foreground">(#{item.ProductNum})</span></span>
+                                  ) : (
+                                    <span className="text-muted-foreground">#{item.ProductNum}</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )
+                  )}
+
+                  <div className="border-t border-border pt-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t.adminPanel.bank.insertSection}</p>
+                    <div className="flex gap-2">
+                      <Select value={selectedProductNum} onValueChange={setSelectedProductNum}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder={t.adminPanel.bank.selectItemPlaceholder} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {shopItems.map((i) => (
+                            <SelectItem key={i.ProductNum} value={String(i.ProductNum)}>
+                              {i.ItemName} (#{i.ProductNum})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        onClick={handleInsert}
+                        disabled={!selectedProductNum || insertLoading}
+                      >
+                        {t.adminPanel.bank.insert}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               )}
             </>
           ) : null}

@@ -48,6 +48,17 @@ export interface ClassStatItem {
   active: number;
 }
 
+export interface AdminActivityEntry {
+  source: "GM" | "LOGIN";
+  logId: number;
+  actor: string | null;
+  actorNum: number | null;
+  actionType: string;
+  entityType: string | null;
+  entityId: string | null;
+  createdAt: string;
+}
+
 
 /* =====================================================
    Public Accessors
@@ -77,6 +88,13 @@ export async function getStatsPerSchool(): Promise<SchoolStatItem[]> {
 export async function getStatsPerClass(): Promise<ClassStatItem[]> {
   const res = await apiFetch<{ ok: boolean; data: ClassStatItem[] }>(
     "/api/adminpanel/dashboard/stat-per-class",
+  );
+  return res.data ?? [];
+}
+
+export async function getRecentAdminActivity(): Promise<AdminActivityEntry[]> {
+  const res = await apiFetch<{ ok: boolean; data: AdminActivityEntry[] }>(
+    "/api/adminpanel/dashboard/recent-activity",
   );
   return res.data ?? [];
 }

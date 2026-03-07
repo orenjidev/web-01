@@ -1,6 +1,7 @@
 import { getWebPool } from "../../loaders/mssql.js";
 
 const gameDb = process.env.DB_NAME_GAME || "RG2Game";
+const userDb = process.env.DB_NAME_USER || "RG2User";
 
 /**
  * =====================================================
@@ -190,4 +191,64 @@ export async function getCharactersPerClass() {
     total: Number(row.TotalCount),
     active: Number(row.ActiveCount),
   }));
+}
+
+/**
+ * Recent Admin Activity (top 10)
+ * Combines GM action log entries and admin logins.
+ */
+export async function getRecentAdminActivity() {
+  const pool = await getWebPool();
+
+  const [gmResult, loginResult] = await Promise.all([
+    pool.request().query(`
+      SELECT TOP 10
+        'GM'        AS Source,
+        LogID,
+        GmUserID    AS Actor,
+        GmUserNum   AS ActorNum,
+        ActionType,
+        EntityType,
+        EntityID,
+        CreatedAt
+      FROM dbo.ActionLogGM
+      WHERE ActionType IN (
+        'GENERATE_TOPUPS', 'GENERATE_TOPUPS_ADMIN',
+        'INSERT_BANK_ITEM', 'SAVE_USER', 'UPDATE_CHARACTER'
+      )
+      ORDER BY CreatedAt DESC
+    `),
+    pool.request().query(`
+      SELECT TOP 10
+        'LOGIN'     AS Source,
+        al.ID       AS LogID,
+        u.UserID    AS Actor,
+        al.UserID   AS ActorNum,
+        al.ActionType,
+        NULL        AS EntityType,
+        NULL        AS EntityID,
+        al.CreatedAt
+      FROM dbo.ActionLog al
+      INNER JOIN [${userDb}].dbo.UserInfo u ON u.UserNum = al.UserID
+      WHERE al.ActionType = 'LOGIN'
+        AND u.UserType >= 50
+      ORDER BY al.CreatedAt DESC
+    `),
+  ]);
+
+  const rows = [...gmResult.recordset, ...loginResult.recordset]
+    .sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt))
+    .slice(0, 10)
+    .map((row) => ({
+      source: row.Source,
+      logId: row.LogID,
+      actor: row.Actor ?? null,
+      actorNum: row.ActorNum ?? null,
+      actionType: row.ActionType,
+      entityType: row.EntityType ?? null,
+      entityId: row.EntityID ?? null,
+      createdAt: row.CreatedAt,
+    }));
+
+  return rows;
 }

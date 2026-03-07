@@ -128,7 +128,8 @@ export const getUserCharactersController = async (req, res) => {
 
 export const getUserBankController = async (req, res) => {
   const { userId } = req.params;
-  const result = await gmToolService.getUserBank(userId);
+  const taken = req.query.taken === "1";
+  const result = await gmToolService.getUserBank(userId, taken);
 
   res.json(result);
 };

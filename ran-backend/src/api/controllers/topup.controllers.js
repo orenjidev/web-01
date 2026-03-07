@@ -1,5 +1,5 @@
 import * as topupService from "../../services/topup.service.js";
-import { generateTopups, listTopups } from "../../services/admin.service.js";
+import { generateTopups, listTopups, setTopupUnused } from "../../services/admin.service.js";
 import { getMessage } from "../../constants/messages.js";
 import { baseServerConfig } from "../../config/server.config.js";
 
@@ -224,5 +224,16 @@ export const generateTopupsController = async (req, res) => {
       ok: false,
       message: MSG.TOPUP.GENERATE_FAILED,
     });
+  }
+};
+
+export const setTopupUnusedController = async (req, res) => {
+  try {
+    const idx = Number(req.params.idx);
+    if (!idx) return res.status(400).json({ ok: false });
+    await setTopupUnused(idx);
+    return res.json({ ok: true });
+  } catch {
+    return res.status(500).json({ ok: false });
   }
 };

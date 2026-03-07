@@ -322,6 +322,242 @@ const ROUTE_MAP = [
     actionType: "VIEW_DASHBOARD",
     entityType: "DASHBOARD",
   },
+
+  // === SHOP CATEGORY DELETE ===
+  {
+    method: "DELETE",
+    pattern: /^\/shop\/categories\/(\d+)/,
+    actionType: "DELETE_SHOP_CATEGORY",
+    entityType: "SHOP_CATEGORY",
+    entityParam: 1,
+  },
+
+  // === SHOP ANALYTICS ===
+  {
+    method: "GET",
+    pattern: /^\/shop\/analytics\/overview/,
+    actionType: "VIEW_SHOP_ANALYTICS_OVERVIEW",
+    entityType: "SHOP_ANALYTICS",
+  },
+  {
+    method: "GET",
+    pattern: /^\/shop\/analytics\/top-items/,
+    actionType: "VIEW_TOP_ITEMS_ANALYTICS",
+    entityType: "SHOP_ANALYTICS",
+  },
+  {
+    method: "GET",
+    pattern: /^\/shop\/analytics\/revenue/,
+    actionType: "VIEW_REVENUE_ANALYTICS",
+    entityType: "SHOP_ANALYTICS",
+  },
+  {
+    method: "GET",
+    pattern: /^\/shop\/analytics\/daily-trend/,
+    actionType: "VIEW_DAILY_TREND_ANALYTICS",
+    entityType: "SHOP_ANALYTICS",
+  },
+  {
+    method: "GET",
+    pattern: /^\/shop\/analytics\/recent/,
+    actionType: "VIEW_RECENT_ANALYTICS",
+    entityType: "SHOP_ANALYTICS",
+  },
+
+  // === TICKETS ===
+  // Specific sub-routes before general /:ticketId to prevent premature matching
+  {
+    method: "GET",
+    pattern: /^\/tickets\/all/,
+    actionType: "LIST_ALL_TICKETS",
+    entityType: "TICKET",
+  },
+  {
+    method: "GET",
+    pattern: /^\/tickets\/list/,
+    actionType: "LIST_STAFF_TICKETS",
+    entityType: "TICKET",
+  },
+  {
+    method: "PUT",
+    pattern: /^\/tickets\/([^/]+)\/status/,
+    actionType: "UPDATE_TICKET_STATUS",
+    entityType: "TICKET",
+    entityParam: 1,
+  },
+  {
+    method: "PUT",
+    pattern: /^\/tickets\/([^/]+)\/priority/,
+    actionType: "UPDATE_TICKET_PRIORITY",
+    entityType: "TICKET",
+    entityParam: 1,
+  },
+  {
+    method: "PUT",
+    pattern: /^\/tickets\/([^/]+)\/assign/,
+    actionType: "ASSIGN_TICKET",
+    entityType: "TICKET",
+    entityParam: 1,
+  },
+  {
+    method: "POST",
+    pattern: /^\/tickets\/([^/]+)\/reply/,
+    actionType: "STAFF_REPLY_TICKET",
+    entityType: "TICKET",
+    entityParam: 1,
+  },
+  {
+    method: "GET",
+    pattern: /^\/tickets\/([^/]+)$/,
+    actionType: "VIEW_TICKET",
+    entityType: "TICKET",
+    entityParam: 1,
+  },
+
+  // === TICKET CATEGORIES ===
+  {
+    method: "GET",
+    pattern: /^\/ticket-categories$/,
+    actionType: "LIST_TICKET_CATEGORIES",
+    entityType: "TICKET_CATEGORY",
+  },
+  {
+    method: "POST",
+    pattern: /^\/ticket-categories$/,
+    actionType: "CREATE_TICKET_CATEGORY",
+    entityType: "TICKET_CATEGORY",
+  },
+  {
+    method: "PATCH",
+    pattern: /^\/ticket-categories\/(\d+)/,
+    actionType: "UPDATE_TICKET_CATEGORY",
+    entityType: "TICKET_CATEGORY",
+    entityParam: 1,
+  },
+  {
+    method: "DELETE",
+    pattern: /^\/ticket-categories\/(\d+)/,
+    actionType: "DELETE_TICKET_CATEGORY",
+    entityType: "TICKET_CATEGORY",
+    entityParam: 1,
+  },
+
+  // === SERVER CONFIG ===
+  {
+    method: "GET",
+    pattern: /^\/server-config$/,
+    actionType: "VIEW_SERVER_CONFIG",
+    entityType: "SERVER_CONFIG",
+  },
+  {
+    method: "PUT",
+    pattern: /^\/server-config\/([^/]+)/,
+    actionType: "UPDATE_SERVER_CONFIG",
+    entityType: "SERVER_CONFIG",
+    entityParam: 1,
+  },
+  {
+    method: "POST",
+    pattern: /^\/server-config\/upload-image/,
+    actionType: "UPLOAD_SLIDER_IMAGE",
+    entityType: "SERVER_CONFIG",
+  },
+  {
+    method: "POST",
+    pattern: /^\/server-config\/upload-static/,
+    actionType: "UPLOAD_STATIC_IMAGE",
+    entityType: "SERVER_CONFIG",
+  },
+
+  // === MASTER CONTROL ===
+  {
+    method: "POST",
+    pattern: /^\/master\/reset/,
+    actionType: "MASTER_RESET",
+    entityType: "MASTER",
+  },
+
+  // === BUILD ITEMS ===
+  {
+    method: "GET",
+    pattern: /^\/build-items\/preview/,
+    actionType: "VIEW_ITEMS_BUILD_PREVIEW",
+    entityType: "BUILD",
+  },
+  {
+    method: "GET",
+    pattern: /^\/build-items\/item\/([^/]+)/,
+    actionType: "VIEW_BUILD_ITEM",
+    entityType: "BUILD",
+    entityParam: 1,
+  },
+  {
+    method: "POST",
+    pattern: /^\/build-items\/upload/,
+    actionType: "UPLOAD_ITEMS_CSV",
+    entityType: "BUILD",
+  },
+  {
+    method: "POST",
+    pattern: /^\/build-items\/build/,
+    actionType: "BUILD_ITEMS",
+    entityType: "BUILD",
+  },
+
+  // === BUILD SKILLS ===
+  {
+    method: "GET",
+    pattern: /^\/build-skills\/preview/,
+    actionType: "VIEW_SKILLS_BUILD_PREVIEW",
+    entityType: "BUILD",
+  },
+  {
+    method: "GET",
+    pattern: /^\/build-skills\/skill\/([^/]+)/,
+    actionType: "VIEW_BUILD_SKILL",
+    entityType: "BUILD",
+    entityParam: 1,
+  },
+  // upload-strings before upload to prevent prefix match
+  {
+    method: "POST",
+    pattern: /^\/build-skills\/upload-strings/,
+    actionType: "UPLOAD_SKILL_STRINGS",
+    entityType: "BUILD",
+  },
+  {
+    method: "POST",
+    pattern: /^\/build-skills\/upload/,
+    actionType: "UPLOAD_SKILLS_CSV",
+    entityType: "BUILD",
+  },
+  {
+    method: "POST",
+    pattern: /^\/build-skills\/build/,
+    actionType: "BUILD_SKILLS",
+    entityType: "BUILD",
+  },
+
+  // === TOPUP ADMIN (middleware applied inside adminRouter — req.path is relative to adminRouter) ===
+  {
+    method: "GET",
+    pattern: /^\/list/,
+    actionType: "LIST_TOPUPS_ADMIN",
+    entityType: "TOPUP",
+  },
+  {
+    method: "POST",
+    pattern: /^\/generate/,
+    actionType: "GENERATE_TOPUPS_ADMIN",
+    entityType: "TOPUP",
+  },
+  {
+    method: "PATCH",
+    pattern: /^\/(\d+)\/unused/,
+    actionType: "SET_TOPUP_UNUSED",
+    entityType: "TOPUP",
+    entityParam: 1,
+  },
 ];
 
 /**

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  Coins,
   FileText,
   GalleryVerticalEnd,
   Hammer,
@@ -44,7 +45,9 @@ export type AdminSection =
   | "tools.buildItems"
   | "tools.buildSkills"
   | "master.control"
-  | "ticket.categories";
+  | "ticket.categories"
+  | "topup.list"
+  | "topup.generate";
 
 const data = {
   user: {
@@ -65,7 +68,6 @@ const data = {
       title: "Account",
       url: "#",
       icon: Users,
-      isActive: true,
       items: [
         { title: "Manage Account", action: "account.manage" as AdminSection },
       ],
@@ -74,7 +76,6 @@ const data = {
       title: "Character",
       url: "#",
       icon: Sword,
-      isActive: true,
       items: [
         {
           title: "Manage Character",
@@ -86,7 +87,6 @@ const data = {
       title: "Tickets",
       url: "#",
       icon: Ticket,
-      isActive: true,
       items: [
         { title: "Manage Tickets", action: "ticket.list" as AdminSection },
         { title: "Ticket Categories", action: "ticket.categories" as AdminSection },
@@ -96,7 +96,6 @@ const data = {
       title: "Item Shop",
       url: "#",
       icon: ShoppingBag,
-      isActive: true,
       items: [
         { title: "Shop Categories", action: "shop.categories" as AdminSection },
         { title: "Shop Items", action: "shop.items" as AdminSection },
@@ -104,10 +103,18 @@ const data = {
       ],
     },
     {
+      title: "Top Up",
+      url: "#",
+      icon: Coins,
+      items: [
+        { title: "Topup Codes", action: "topup.list" as AdminSection },
+        { title: "Generate Codes", action: "topup.generate" as AdminSection },
+      ],
+    },
+    {
       title: "Content",
       url: "#",
       icon: FileText,
-      isActive: true,
       items: [
         { title: "Manage News", action: "news" as AdminSection },
         { title: "Manage Downloads", action: "downloads" as AdminSection },
@@ -136,7 +143,6 @@ const data = {
       url: "#",
       icon: Settings2,
       items: [
-        { title: "General", action: "dashboard" as AdminSection },
         { title: "Server Config", action: "server.config" as AdminSection },
         { title: "Master Control", action: "master.control" as AdminSection },
       ],

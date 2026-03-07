@@ -54,10 +54,12 @@ import {
   getDashboardTrend,
   getStatsPerSchool,
   getStatsPerClass,
+  getRecentAdminActivity,
   type DashboardStats,
   type DashboardTrendItem,
   type SchoolStatItem,
   type ClassStatItem,
+  type AdminActivityEntry,
 } from "@/lib/data/admin.dashboard.data";
 
 import { AccountSection } from "@/components/admin/sections/AccountSection";
@@ -73,6 +75,7 @@ import { BuildItemsSection } from "@/components/admin/sections/BuildItemsSection
 import { BuildSkillsSection } from "@/components/admin/sections/BuildSkillsSection";
 import { MasterControlSection } from "@/components/admin/sections/MasterControlSection";
 import { TicketCategorySection } from "@/components/admin/sections/TicketCategorySection";
+import { TopupSection } from "@/components/admin/sections/TopupSection";
 import { usePolling } from "@/hooks/usePolling";
 import { classMap } from "@/lib/data/character.data";
 
@@ -111,6 +114,8 @@ const SECTION_LABELS: Record<AdminSection, string> = {
   "tools.buildSkills": "Build Skills",
   "master.control": "Master Control",
   "ticket.categories": "Ticket Categories",
+  "topup.list": "Topup Codes",
+  "topup.generate": "Generate Topup",
 };
 
 /* =====================================================
@@ -264,16 +269,99 @@ interface DashboardBundle {
   trend: DashboardTrendItem[];
   schoolStats: SchoolStatItem[];
   classStats: ClassStatItem[];
+  recentActivity: AdminActivityEntry[];
 }
 
 async function fetchDashboardBundle(): Promise<DashboardBundle> {
-  const [stats, trend, schoolStats, classStats] = await Promise.all([
+  const [stats, trend, schoolStats, classStats, recentActivity] = await Promise.all([
     getDashboardStats(),
     getDashboardTrend(),
     getStatsPerSchool(),
     getStatsPerClass(),
+    getRecentAdminActivity(),
   ]);
-  return { stats, trend, schoolStats, classStats };
+  return { stats, trend, schoolStats, classStats, recentActivity };
+}
+
+/* =====================================================
+   Action type label map for the activity widget
+===================================================== */
+const ACTIVITY_LABELS: Record<string, string> = {
+  GENERATE_TOPUPS: "Generate Topup",
+  GENERATE_TOPUPS_ADMIN: "Generate Topup",
+  INSERT_BANK_ITEM: "Insert Bank Item",
+  SAVE_USER: "Edit User",
+  UPDATE_CHARACTER: "Edit Character",
+  LOGIN: "Admin Login",
+};
+
+const ACTIVITY_COLORS: Record<string, string> = {
+  GENERATE_TOPUPS: "text-cyan-500 bg-cyan-500/10",
+  GENERATE_TOPUPS_ADMIN: "text-cyan-500 bg-cyan-500/10",
+  INSERT_BANK_ITEM: "text-violet-500 bg-violet-500/10",
+  SAVE_USER: "text-blue-500 bg-blue-500/10",
+  UPDATE_CHARACTER: "text-orange-500 bg-orange-500/10",
+  LOGIN: "text-emerald-500 bg-emerald-500/10",
+};
+
+function RecentAdminActivity({ rows, loading }: { rows: AdminActivityEntry[]; loading: boolean }) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold">Recent Admin Activity</CardTitle>
+        <CardDescription>Latest 10 significant GM actions and admin logins</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No recent activity.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">Time</th>
+                  <th className="pb-2 pr-4 font-medium">Admin</th>
+                  <th className="pb-2 pr-4 font-medium">Action</th>
+                  <th className="pb-2 font-medium">Target</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const colorClass = ACTIVITY_COLORS[row.actionType] ?? "text-muted-foreground bg-muted";
+                  const label = ACTIVITY_LABELS[row.actionType] ?? row.actionType;
+                  const target = row.entityId
+                    ? `${row.entityType ?? ""} #${row.entityId}`
+                    : row.entityType ?? "—";
+                  return (
+                    <tr key={`${row.source}-${row.logId}`} className="border-b border-border/50">
+                      <td className="py-2 pr-4 text-muted-foreground whitespace-nowrap">
+                        {new Date(row.createdAt).toLocaleString()}
+                      </td>
+                      <td className="py-2 pr-4 font-mono font-medium">
+                        {row.actor ?? `#${row.actorNum}`}
+                      </td>
+                      <td className="py-2 pr-4">
+                        <span className={`inline-flex items-center rounded px-1.5 py-0.5 font-medium ${colorClass}`}>
+                          {label}
+                        </span>
+                      </td>
+                      <td className="py-2 text-muted-foreground">{target}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function DashboardOverview() {
@@ -286,6 +374,7 @@ function DashboardOverview() {
   const trend = data?.trend ?? [];
   const schoolStats = data?.schoolStats ?? [];
   const classStats = data?.classStats ?? [];
+  const recentActivity = data?.recentActivity ?? [];
   const refreshing = false;
 
   /* ---- Derived Chart Data ---- */
@@ -600,6 +689,9 @@ function DashboardOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Admin Activity */}
+      <RecentAdminActivity rows={recentActivity} loading={loading} />
     </div>
   );
 }
@@ -657,6 +749,8 @@ export default function DashboardPage() {
           {activeSection === "logs.gm" && <ActionLogSection defaultTab="gm" />}
           {activeSection === "master.control" && <MasterControlSection />}
           {activeSection === "ticket.categories" && <TicketCategorySection />}
+          {activeSection === "topup.list" && <TopupSection tab="list" />}
+          {activeSection === "topup.generate" && <TopupSection tab="generate" />}
         </div>
       </SidebarInset>
     </SidebarProvider>

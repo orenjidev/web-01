@@ -18,5 +18,6 @@ router.get("/", dashboardRoutes.getDashboardController);
 router.get("/trend", dashboardRoutes.getDashboardTrendController);
 router.get("/stat-per-school", dashboardRoutes.getCharacterPerSchoolController);
 router.get("/stat-per-class", dashboardRoutes.getCharacterPerClassController);
+router.get("/recent-activity", dashboardRoutes.getRecentAdminActivityController);
 
 export default router;

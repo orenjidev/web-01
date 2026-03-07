@@ -74,6 +74,15 @@ export const getCharacterPerSchoolController = async (req, res) => {
   }
 };
 
+export const getRecentAdminActivityController = async (req, res) => {
+  try {
+    const data = await dashboardService.getRecentAdminActivity();
+    return res.json({ ok: true, data });
+  } catch (err) {
+    return res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
 export const getCharacterPerClassController = async (req, res) => {
   const MSG = getMessage(req.ctx.lang);
 

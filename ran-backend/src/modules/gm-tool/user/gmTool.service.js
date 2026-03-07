@@ -291,15 +291,16 @@ export const forceOffline = async (userNum, ctx = {}) => {
    - UserBankInsert
 ===================================================== */
 
-export const getUserBank = async (userId) => {
+export const getUserBank = async (userId, taken = false) => {
   const pool = await getShopPool();
 
+  const flag = taken ? 1 : 0;
   const result = await pool
     .request()
     .input("UserUID", sql.NVarChar(255), userId).query(`
-      SELECT PurKey, ProductNum, PurPrice
+      SELECT PurKey, ProductNum
       FROM ShopPurchase
-      WHERE UserUID = @UserUID AND PurFlag = 0
+      WHERE UserUID = @UserUID AND PurFlag = ${flag}
     `);
 
   return { ok: true, rows: result.recordset };
