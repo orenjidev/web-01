@@ -21,6 +21,10 @@
  */
 import express from "express";
 import { getPublicConfig, getPublicStats } from "../controllers/publicConfig.controller.js";
+import {
+  listPublicSkillsController,
+  getPublicSkillDetailController,
+} from "../controllers/publicSkills.controller.js";
 
 const router = express.Router();
 
@@ -139,5 +143,8 @@ router.get("/config", getPublicConfig);
  * }
  */
 router.get("/stats", getPublicStats);
+
+router.get("/skills", listPublicSkillsController);
+router.get("/skills/:skillId", getPublicSkillDetailController);
 
 export default router;

@@ -6,6 +6,7 @@ import shopRoutes from "./shop.routes.js";
 import actionlogRoutes from "./actionlog.routes.js";
 import serverConfigRoutes from "./serverConfig.routes.js";
 import buildItemsRoutes from "./buildItems.routes.js";
+import buildSkillsRoutes from "./buildSkills.routes.js";
 
 const router = Router();
 
@@ -17,5 +18,6 @@ router.use("/shop", shopRoutes);
 router.use("/actionlog", actionlogRoutes);
 router.use("/server-config", serverConfigRoutes);
 router.use("/build-items", buildItemsRoutes);
+router.use("/build-skills", buildSkillsRoutes);
 
 export default router;

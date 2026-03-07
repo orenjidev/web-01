@@ -21,6 +21,7 @@ export const en = {
 
   nav: {
     news: "News",
+    classes: "Classes",
     download: "Download",
     rankings: "Rankings",
     itemShop: "Item Shop",

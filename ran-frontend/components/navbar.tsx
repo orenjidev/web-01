@@ -56,6 +56,7 @@ const NavBar = () => {
             <nav className="hidden md:flex space-x-6 absolute left-1/2 -translate-x-1/2">
               {/* Public Links */}
               <Link href="/" className={navLinkClass}>{t.nav.news}</Link>
+              <Link href="/classes" className={navLinkClass}>{t.nav.classes}</Link>
               <Link href="/download" className={navLinkClass}>{t.nav.download}</Link>
               <Link href="/rankings" className={navLinkClass}>{t.nav.rankings}</Link>
 

@@ -21,6 +21,7 @@ export const th = {
 
   nav: {
     news: "ข่าวสาร",
+    classes: "สกิล",
     download: "ดาวน์โหลด",
     rankings: "อันดับ",
     itemShop: "ร้านค้า",

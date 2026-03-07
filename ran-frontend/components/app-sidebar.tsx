@@ -40,7 +40,8 @@ export type AdminSection =
   | "server.config"
   | "logs.user"
   | "logs.gm"
-  | "tools.buildItems";
+  | "tools.buildItems"
+  | "tools.buildSkills";
 
 const data = {
   user: {
@@ -121,6 +122,7 @@ const data = {
       icon: Hammer,
       items: [
         { title: "Build Items", action: "tools.buildItems" as AdminSection },
+        { title: "Build Skills", action: "tools.buildSkills" as AdminSection },
       ],
     },
     {

@@ -71,6 +71,7 @@ export default function Footer() {
           {/* Game */}
           <FooterLinkGroup heading={t.footer.game}>
             <Link href="/" className={linkClass}>{t.nav.news}</Link>
+            <Link href="/classes" className={linkClass}>{t.nav.classes}</Link>
             <Link href="/download" className={linkClass}>{t.nav.download}</Link>
             <Link href="/rankings" className={linkClass}>{t.nav.rankings}</Link>
           </FooterLinkGroup>

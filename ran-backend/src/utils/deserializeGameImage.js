@@ -37,6 +37,8 @@ export function deserializeExpSkills(buffer) {
   for (let i = 0; i < count; i++) {
     const dwID = stream.readUInt32();
     const level = stream.readUInt16();
+    const mainId = dwID & 0xffff;
+    const subId = (dwID >> 16) & 0xffff;
 
     if (structSize === 8) {
       stream.skip(2);
@@ -44,8 +46,8 @@ export function deserializeExpSkills(buffer) {
 
     skills.push({
       //dwID,
-      mainId: dwID & 0xffff,
-      subId: (dwID >> 16) & 0xffff,
+      mainId,
+      subId,
       level,
       skillname: getSkillName(mainId, subId),
     });
