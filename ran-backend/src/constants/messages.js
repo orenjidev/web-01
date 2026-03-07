@@ -87,6 +87,7 @@ const messages = {
       LENGTH_RULE: "Input length does not meet requirements",
       PASSWORD_CONFIRM_MISMATCH: "Passwords do not match",
       PINCODE_CONFIRM_MISMATCH: "Pincodes do not match",
+      CAPTCHA_FAILED: "Captcha verification failed. Please try again.",
       USERNAME_TAKEN: "Username is already taken",
       EMAIL_TAKEN: "Email is already registered",
       INVALID_EMAIL: "Invalid email format",

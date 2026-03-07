@@ -147,18 +147,50 @@ SSL/TLS → set to **Flexible** (Cloudflare handles HTTPS, sends HTTP to your se
 ```
 NODE_ENV=production
 PORT=1669
+
+# CORS — must match your frontend domain exactly
 WEB_URL=https://cp.rng-dev.com
+
+# Cross-subdomain cookie — must start with a dot
+COOKIE_DOMAIN=.rng-dev.com
+
+# Upload URL — used when generating slider image URLs
+BACKEND_URL=https://backend.rng-dev.com
+
+# Database
+DB_HOST=localhost
+DB_PORT=1433
+DB_USER=sa
+DB_PASS=your-db-password
+DB_NAME_WEB=OrenjiCP
+DB_NAME_USER=RG3User
+DB_NAME_GAME=RG3Game
+DB_NAME_LOG=RG3Log
+DB_NAME_SHOP=RG2Shop
+
+# Session
+COOKIE=rng-web-dev-deploy
+SESSION_SECRET=your-secret-here
+
+# Optional
+SENTRY_DSN=
 ```
-(Plus your DB credentials, session secret, etc.)
 
 ### Frontend `.env` (`ran-frontend/.env`)
 ```
+# Must point to backend domain — baked in at build time
 NEXT_PUBLIC_API_ENDPOINT_URL=https://backend.rng-dev.com
-WEB_URL=https://cp.rng-dev.com
+
 NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_key_here
+NEXT_PUBLIC_SENTRY_DSN=
 ```
 
-> **Important**: `NEXT_PUBLIC_` variables are baked in at build time. You must rebuild the frontend after changing them.
+> **Important notes on environment variables:**
+> - `NEXT_PUBLIC_` variables are **baked in at build time** — you must rebuild the frontend after changing any of them
+> - `COOKIE_DOMAIN` must start with a dot (`.rng-dev.com`) to work across subdomains
+> - `WEB_URL` on the backend must match the frontend origin exactly — no trailing slash
+> - `BACKEND_URL` is used to generate uploaded image URLs — must be your public backend domain
+> - Leave `COOKIE_DOMAIN` and `BACKEND_URL` **unset** for local development
 
 ---
 
@@ -323,22 +355,25 @@ In IIS Manager → site → **Bindings** → Edit:
 
 Since frontend (`cp.rng-dev.com`) and backend (`backend.rng-dev.com`) are on different subdomains, the session cookie must be configured to work cross-subdomain.
 
-In `ran-backend/src/loaders/express.js`, the cookie config must be:
+In `ran-backend/src/loaders/express.js`, the cookie config is environment-aware:
 
 ```js
 cookie: {
     httpOnly: true,
-    sameSite: "none",   // allows cross-origin cookie sending
-    secure: true,       // required when sameSite is "none"
-    domain: ".rng-dev.com",  // shared across all subdomains
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
+    domain: process.env.COOKIE_DOMAIN || undefined,
     path: "/",
     maxAge: 1000 * 60 * 60 * 2,
 },
 ```
 
-- `sameSite: "none"` — allows the browser to send the cookie on cross-origin requests
-- `secure: true` — required by browsers when `sameSite: "none"`; works because Cloudflare delivers HTTPS to the browser
+Set `COOKIE_DOMAIN=.rng-dev.com` in your production `.env` (see Step 7).
+
+- `sameSite: "none"` in production — allows cross-origin cookie sending between subdomains
+- `secure: true` in production — required when `sameSite: "none"`; works because Cloudflare delivers HTTPS to the browser
 - `domain: ".rng-dev.com"` — cookie is accessible on all `*.rng-dev.com` subdomains
+- Local dev uses `sameSite: "lax"` and `secure: false` automatically — no config needed
 
 > **Note:** `secure: true` works here because Cloudflare terminates HTTPS. The connection between Cloudflare and IIS is HTTP, but the browser sees HTTPS.
 
