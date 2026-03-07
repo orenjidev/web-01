@@ -104,6 +104,12 @@ export interface PublicConfig {
 
   siteImages: {
     logoUrl: string;
+    metaTitle: string;
+    metaTitlePerPath: Record<string, string>;
+    metaIconEnabled: boolean;
+    metaIconUrl: string;
+    metaIconPaths: Record<string, boolean>;
+    metaIconPerPath: Record<string, string>;
     classImages: Record<string, string>;
     schoolImages: Record<string, string>;
   };

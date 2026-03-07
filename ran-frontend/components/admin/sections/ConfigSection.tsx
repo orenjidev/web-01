@@ -26,6 +26,7 @@ import {
 import { usePublicConfig } from "@/context/PublicConfigContext";
 import { en as enDefault } from "@/lib/i18n/locales/en";
 import { th as thDefault } from "@/lib/i18n/locales/th";
+import { META_ICON_PATHS } from "@/lib/meta-icon-paths";
 
 /* ─────────────────────────────
    Small helpers
@@ -1642,6 +1643,31 @@ const SCHOOL_IMAGE_SLOTS = [
   { code: 2, label: "Phoenix" },
 ];
 
+function normalizeSiteImagesForm(data: Record<string, any>) {
+  const accessMapDefaults = Object.fromEntries(
+    META_ICON_PATHS.map(({ path }) => [path, data?.metaIconPaths?.[path] ?? true]),
+  );
+  const iconMapDefaults = Object.fromEntries(
+    META_ICON_PATHS.map(({ path }) => [path, data?.metaIconPerPath?.[path] ?? ""]),
+  );
+  const titleMapDefaults = Object.fromEntries(
+    META_ICON_PATHS.map(({ path }) => [path, data?.metaTitlePerPath?.[path] ?? ""]),
+  );
+  const accessMap = { ...(data?.metaIconPaths ?? {}), ...accessMapDefaults };
+  const iconMap = { ...(data?.metaIconPerPath ?? {}), ...iconMapDefaults };
+  const titleMap = { ...(data?.metaTitlePerPath ?? {}), ...titleMapDefaults };
+
+  return {
+    ...data,
+    metaTitle: data?.metaTitle ?? "",
+    metaTitlePerPath: titleMap,
+    metaIconEnabled: data?.metaIconEnabled ?? false,
+    metaIconUrl: data?.metaIconUrl ?? "",
+    metaIconPaths: accessMap,
+    metaIconPerPath: iconMap,
+  };
+}
+
 function ImageUploadSlot({
   label,
   currentUrl,
@@ -1712,10 +1738,14 @@ function SiteImagesTab({
   data: Record<string, any>;
   onSave: (v: Record<string, any>) => Promise<void>;
 }) {
-  const [form, setForm] = useState<Record<string, any>>(data);
+  const [form, setForm] = useState<Record<string, any>>(
+    normalizeSiteImagesForm(data),
+  );
   const [saving, setSaving] = useState(false);
+  const [globalIconUploading, setGlobalIconUploading] = useState(false);
+  const [pathUploading, setPathUploading] = useState<Record<string, boolean>>({});
 
-  useEffect(() => { setForm(data); }, [data]);
+  useEffect(() => { setForm(normalizeSiteImagesForm(data)); }, [data]);
 
   async function handleSave() {
     setSaving(true);
@@ -1743,6 +1773,62 @@ function SiteImagesTab({
     }));
   }
 
+  function setMetaIconPath(path: string, enabled: boolean) {
+    setForm((f) => ({
+      ...f,
+      metaIconPaths: {
+        ...(f.metaIconPaths ?? {}),
+        [path]: enabled,
+      },
+    }));
+  }
+
+  function setMetaPathIcon(path: string, url: string) {
+    setForm((f) => ({
+      ...f,
+      metaIconPerPath: {
+        ...(f.metaIconPerPath ?? {}),
+        [path]: url,
+      },
+    }));
+  }
+
+  function setMetaPathTitle(path: string, title: string) {
+    setForm((f) => ({
+      ...f,
+      metaTitlePerPath: {
+        ...(f.metaTitlePerPath ?? {}),
+        [path]: title,
+      },
+    }));
+  }
+
+  async function uploadMetaPathIcon(path: string, file: File) {
+    setPathUploading((s) => ({ ...s, [path]: true }));
+    try {
+      const url = await uploadStaticImage(file);
+      setMetaPathIcon(path, url);
+      toast.success(`Icon uploaded for ${path}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setPathUploading((s) => ({ ...s, [path]: false }));
+    }
+  }
+
+  async function uploadGlobalMetaIcon(file: File) {
+    setGlobalIconUploading(true);
+    try {
+      const url = await uploadStaticImage(file);
+      setForm((f) => ({ ...f, metaIconUrl: url }));
+      toast.success("Global icon uploaded.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setGlobalIconUploading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Logo */}
@@ -1762,6 +1848,141 @@ function SiteImagesTab({
               {form.logoUrl && (
                 <p className="font-mono text-[10px] break-all">{form.logoUrl}</p>
               )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Global Meta Icon</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Enable Global Icon</p>
+                <p className="text-xs text-muted-foreground">
+                  Path icon fallback order: path icon, then global icon, then default favicon.
+                </p>
+              </div>
+              <Switch
+                checked={!!form.metaIconEnabled}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, metaIconEnabled: v }))}
+              />
+            </div>
+            <div className="grid grid-cols-[28px_1fr_auto] items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={form.metaIconUrl || "/favicon.ico"}
+                alt="Global icon"
+                className="h-7 w-7 rounded border object-cover"
+              />
+              <Input
+                className="h-8 text-xs"
+                placeholder="Global icon URL"
+                value={form.metaIconUrl ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, metaIconUrl: e.target.value }))}
+              />
+              <label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadGlobalMetaIcon(file);
+                    e.currentTarget.value = "";
+                  }}
+                />
+                <Button type="button" size="sm" variant="outline" className="h-8 text-xs" asChild>
+                  <span>{globalIconUploading ? "Uploading..." : "Upload"}</span>
+                </Button>
+              </label>
+            </div>
+            <div className="grid grid-cols-[28px_1fr] items-center gap-2">
+              <span className="text-[11px] text-muted-foreground text-center">T</span>
+              <Input
+                className="h-8 text-xs"
+                placeholder="Meta title (website title base)"
+                value={form.metaTitle ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, metaTitle: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-lg border overflow-hidden">
+            <div className="grid grid-cols-[minmax(180px,1fr)_minmax(170px,1fr)_72px_52px_minmax(180px,1fr)_140px] gap-2 px-3 py-2 text-[11px] font-semibold text-muted-foreground bg-muted/30 border-b">
+              <span>Title Meta</span>
+              <span>URL Path</span>
+              <span className="text-center">Enabled</span>
+              <span className="text-center">Icon</span>
+              <span>Custom Icon URL</span>
+              <span className="text-right">Actions</span>
+            </div>
+            <div className="max-h-[420px] overflow-auto">
+              {META_ICON_PATHS.map(({ path, label }) => (
+                <div
+                  key={path}
+                  className="grid grid-cols-[minmax(180px,1fr)_minmax(170px,1fr)_72px_52px_minmax(180px,1fr)_140px] gap-2 px-3 py-2 items-center border-b last:border-b-0"
+                >
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="Optional path title"
+                    value={form.metaTitlePerPath?.[path] ?? ""}
+                    onChange={(e) => setMetaPathTitle(path, e.target.value)}
+                  />
+                  <div className="min-w-0">
+                    <p className="font-mono text-[11px] truncate" title={path}>{label}</p>
+                  </div>
+                  <div className="flex justify-center">
+                    <Switch
+                      checked={form.metaIconPaths?.[path] !== false}
+                      onCheckedChange={(v) => setMetaIconPath(path, v)}
+                    />
+                  </div>
+                  <div className="flex justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={form.metaIconPerPath?.[path] || form.metaIconUrl || "/favicon.ico"}
+                      alt={`${path} icon`}
+                      className="h-6 w-6 rounded border object-cover"
+                    />
+                  </div>
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="Optional path icon URL"
+                    value={form.metaIconPerPath?.[path] ?? ""}
+                    onChange={(e) => setMetaPathIcon(path, e.target.value)}
+                  />
+                  <div className="flex items-center justify-end gap-1">
+                    <label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadMetaPathIcon(path, file);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                      <Button type="button" size="sm" variant="outline" className="h-8 text-xs px-2" asChild>
+                        <span>{pathUploading[path] ? "..." : "Upload"}</span>
+                      </Button>
+                    </label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs px-2"
+                      onClick={() => setMetaPathIcon(path, "")}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </CardContent>
@@ -1823,6 +2044,7 @@ function SiteImagesTab({
 export function ConfigSection() {
   const [config, setConfig] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
+  const { refresh } = usePublicConfig();
 
   useEffect(() => {
     getServerConfig()
@@ -1835,6 +2057,7 @@ export function ConfigSection() {
     return async (value: any) => {
       await saveConfigSection(section, value);
       setConfig((prev) => (prev ? { ...prev, [section]: value } : prev));
+      await refresh();
     };
   }
 

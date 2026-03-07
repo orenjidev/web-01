@@ -228,6 +228,15 @@ export const baseServerConfig = {
    */
   siteImages: {
     logoUrl: "",
+    metaTitle: "",
+    metaTitlePerPath: {},
+    metaIconEnabled: false,
+    metaIconUrl: "",
+    metaIconPaths: {
+      "/": true,
+      "/dashboard": true,
+    },
+    metaIconPerPath: {},
     classImages: {},
     schoolImages: {},
   },

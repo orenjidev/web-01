@@ -45,7 +45,9 @@ export function createExpressApp() {
 
   app.set("trust proxy", GlobalConfig.security.trustProxy);
   app.use(cookieParser());
-  app.use(express.json());
+  // News/Download editors can include embedded base64 images, which creates large JSON payloads.
+  app.use(express.json({ limit: "25mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
   // cors — supports comma-separated WEB_URL list (e.g. for multiple frontends)
   app.use(

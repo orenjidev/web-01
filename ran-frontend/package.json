@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "generate:meta-paths": "node scripts/generate-meta-icon-paths.cjs",
+    "predev": "npm run generate:meta-paths",
     "dev": "next dev -p 3001",
+    "prebuild": "npm run generate:meta-paths",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

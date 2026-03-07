@@ -13,6 +13,8 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { ModalProvider } from "@/context/ModalContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MaintenanceProvider } from "@/context/MaintenanceContext";
+import MetaIconManager from "@/components/meta-icon-manager";
+import MetaTitleManager from "@/components/meta-title-manager";
 
 /* =====================================================
    Fonts
@@ -43,14 +45,18 @@ export async function generateMetadata(): Promise<Metadata> {
       next: { revalidate: 60 },
     });
     const data = await res.json();
-    const name: string = data?.serverName ?? "Ran Online GS";
+    const metaTitle =
+      typeof data?.siteImages?.metaTitle === "string"
+        ? data.siteImages.metaTitle.trim()
+        : "";
+    const name: string = metaTitle || data?.serverName || "Ran Online GS";
     return {
-      title: { template: `%s | ${name}`, default: name },
+      title: { template: `${name} | %s`, default: name },
       description: data?.serverMotto ?? "",
     };
   } catch {
     return {
-      title: { template: "%s | Ran Online GS", default: "Ran Online GS" },
+      title: { template: "Ran Online GS | %s", default: "Ran Online GS" },
       description: "",
     };
   }
@@ -72,6 +78,8 @@ export default function RootLayout({
         <MaintenanceProvider>
           <AuthProvider>
             <PublicConfigProvider>
+              <MetaIconManager />
+              <MetaTitleManager />
               <LanguageProvider>
                 <TooltipProvider>
                   <ModalProvider>{children}</ModalProvider>

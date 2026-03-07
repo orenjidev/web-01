@@ -72,6 +72,12 @@ export function getPublicConfig(req, res) {
 
     siteImages: {
       logoUrl: baseServerConfig.siteImages?.logoUrl ?? "",
+      metaTitle: baseServerConfig.siteImages?.metaTitle ?? "",
+      metaTitlePerPath: baseServerConfig.siteImages?.metaTitlePerPath ?? {},
+      metaIconEnabled: baseServerConfig.siteImages?.metaIconEnabled ?? false,
+      metaIconUrl: baseServerConfig.siteImages?.metaIconUrl ?? "",
+      metaIconPaths: baseServerConfig.siteImages?.metaIconPaths ?? {},
+      metaIconPerPath: baseServerConfig.siteImages?.metaIconPerPath ?? {},
       classImages: baseServerConfig.siteImages?.classImages ?? {},
       schoolImages: baseServerConfig.siteImages?.schoolImages ?? {},
     },
