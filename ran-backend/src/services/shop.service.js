@@ -24,7 +24,7 @@ export const getShopCategories = async () => {
     SELECT
       CategoryNum,
       CategoryName
-    FROM RG2Shop.dbo.ShopCategory
+    FROM ${process.env.DB_NAME_SHOP}.dbo.ShopCategory
     WHERE CategoryUse = 1
     ORDER BY CategoryNum ASC
   `);
@@ -57,7 +57,7 @@ const loadItemMetadata = async () => {
       ItemMoney,
       ShopType,
       ItemCategory
-    FROM RG2Shop.dbo.ShopItemMap
+    FROM ${process.env.DB_NAME_SHOP}.dbo.ShopItemMap
   `);
 
   const itemsByCategory = {};
@@ -131,7 +131,7 @@ const loadLiveStockByCategory = async (categoryNum) => {
       SELECT
         ProductNum,
         ItemStock
-      FROM RG2Shop.dbo.ShopItemMap
+      FROM ${process.env.DB_NAME_SHOP}.dbo.ShopItemMap
       WHERE ItemCategory = @Category
     `);
 
@@ -168,7 +168,7 @@ export const getFullShop = async () => {
     SELECT
       ProductNum,
       ItemStock
-    FROM RG2Shop.dbo.ShopItemMap
+    FROM ${process.env.DB_NAME_SHOP}.dbo.ShopItemMap
   `);
 
   const stockMap = {};
@@ -248,7 +248,7 @@ export const getPurchaseHistoryService = async ({
       IsGift,
       ReceiverUserID,
       COUNT(*) OVER() AS TotalCount
-    FROM RG2Shop.dbo.ShopPurchaseLog
+    FROM ${process.env.DB_NAME_SHOP}.dbo.ShopPurchaseLog
     WHERE UserID = @UserID
     ${dateFilter}
     ORDER BY idx DESC

@@ -81,9 +81,10 @@ export function createExpressApp() {
       saveUninitialized: false,
       cookie: {
         httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/", // 🔑 IMPORTANT
+        sameSite: "none",
+        secure: true,
+        domain: ".rng-dev.com",
+        path: "/",
         maxAge: 1000 * 60 * 60 * 2,
       },
     }),
