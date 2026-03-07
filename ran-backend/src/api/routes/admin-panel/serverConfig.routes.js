@@ -22,7 +22,7 @@ router.post("/upload-image", sliderUpload.single("file"), async (req, res, next)
   } catch (err) {
     return next(err);
   }
-  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`;
   const url = `${baseUrl}/uploads/slider/${req.file.filename}`;
   res.json({ ok: true, url });
 });
