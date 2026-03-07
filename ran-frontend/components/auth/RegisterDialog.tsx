@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
+import { useState } from "react";
 import { toast } from "sonner";
 import { UserPlus, User, Mail, Lock, Hash } from "lucide-react";
 
@@ -22,9 +21,6 @@ import { Label } from "@/components/ui/label";
 export default function RegisterDialog() {
   const { modal, openModal, closeModal } = useModal();
   const t = useT();
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
-
-  const [captchaToken, setCaptchaToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<Omit<RegisterPayload, "token" | "referrer">>({
     username: "",
@@ -49,8 +45,6 @@ export default function RegisterDialog() {
       pincode: "",
       confirm_pincode: "",
     });
-    recaptchaRef.current?.reset();
-    setCaptchaToken("");
   };
 
   const validateForm = (f: typeof form): string => {
@@ -71,19 +65,11 @@ export default function RegisterDialog() {
     const err = validateForm(form);
     if (err) { toast.error(err); return; }
 
-    if (!captchaToken) {
-      toast.error(t.auth.errors.captchaRequired);
-      return;
-    }
-
     setLoading(true);
 
-    const payload: RegisterPayload = { ...form, token: captchaToken, referrer: "" };
+    const payload: RegisterPayload = { ...form, token: "", referrer: "" };
 
-    const res: RegisterResponse = await registerUser(payload, () => {
-      recaptchaRef.current?.reset();
-      setCaptchaToken("");
-    });
+    const res: RegisterResponse = await registerUser(payload);
 
     setLoading(false);
 
@@ -241,16 +227,6 @@ export default function RegisterDialog() {
                   />
                 </div>
               </div>
-            </div>
-
-            {/* reCAPTCHA */}
-            <div className="flex justify-center pt-1">
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                onChange={(token) => setCaptchaToken(token || "")}
-                theme="dark"
-              />
             </div>
 
             <p className="text-xs text-center text-muted-foreground">

@@ -97,29 +97,13 @@ export const login = async (body, ctx = {}) => {
    Register
 -------------------------- */
 
-const verifyCaptcha = async (token) => {
-  const secret = process.env.RECAPTCHA_SECRET_KEY;
-  if (!secret) return true; // skip if not configured
-
-  const params = new URLSearchParams({ secret, response: token });
-  const res = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
-    method: "POST",
-    body: params,
-  });
-  const data = await res.json();
-  return data.success === true;
-};
-
 export const register = async (body, ctx = {}) => {
   const MSG = getMessage(ctx.lang);
 
   const validationError = validateRegisterBody(body, MSG);
   if (validationError) return validationError;
 
-  const { userid, password, pincode, email, token } = body;
-
-  const captchaOk = await verifyCaptcha(token);
-  if (!captchaOk) return { ok: false, message: MSG.REGISTER.CAPTCHA_FAILED };
+  const { userid, password, pincode, email } = body;
   const userPool = await getUserPool();
 
   if (await checkUserIdExists(userPool, userid))
