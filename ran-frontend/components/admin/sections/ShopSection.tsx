@@ -407,7 +407,7 @@ function ItemsTab() {
     itemCategory: "",
     itemStock: "0",
     itemMoney: "",
-    shopType: "EP",
+    enabled: "1",
   });
 
   async function load() {
@@ -429,7 +429,7 @@ function ItemsTab() {
   function openCreate() {
     setEditTarget(null);
     setSelectedItem(null);
-    setForm({ itemMain: "", itemSub: "", itemName: "", itemCategory: "", itemStock: "0", itemMoney: "", shopType: "EP" });
+    setForm({ itemMain: "", itemSub: "", itemName: "", itemCategory: "", itemStock: "0", itemMoney: "", enabled: "1" });
     setDialogOpen(true);
   }
 
@@ -443,15 +443,14 @@ function ItemsTab() {
       grade: { attack: 0, defense: 0 },
       icon: { main: 0, sub: 0 },
     });
-    const matchingCat = categories.find((c) => c.CategoryNum === item.ItemCategory);
     setForm({
       itemMain: String(item.ItemMain),
       itemSub: String(item.ItemSub),
       itemName: item.ItemName,
-      itemCategory: matchingCat ? String(matchingCat.idx) : "",
+      itemCategory: String(item.ItemCategory),
       itemStock: String(item.ItemStock),
       itemMoney: String(item.ItemMoney),
-      shopType: item.ShopType,
+      enabled: item.ShopType ? "1" : "0",
     });
     setDialogOpen(true);
   }
@@ -472,11 +471,7 @@ function ItemsTab() {
     e.preventDefault();
     setSaving(true);
     try {
-      // form.itemCategory stores the category's idx; map back to CategoryNum for the backend
-      const selectedCat = form.itemCategory
-        ? categories.find((c) => c.idx === Number(form.itemCategory))
-        : undefined;
-      const categoryNum = selectedCat?.CategoryNum ?? undefined;
+      const categoryNum = form.itemCategory ? Number(form.itemCategory) : undefined;
 
       if (editTarget) {
         await updateShopItem(editTarget.ProductNum, {
@@ -486,6 +481,7 @@ function ItemsTab() {
           category: categoryNum,
           stock: Number(form.itemStock),
           price: Number(form.itemMoney),
+          enabled: form.enabled === "1",
         });
         toast.success("Item updated.");
       } else {
@@ -501,6 +497,7 @@ function ItemsTab() {
           category: categoryNum,
           stock: Number(form.itemStock),
           price: Number(form.itemMoney),
+          enabled: form.enabled === "1",
         });
         toast.success("Item created.");
       }
@@ -556,13 +553,16 @@ function ItemsTab() {
                   <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{item.ProductNum}</td>
                   <td className="px-3 py-2 font-medium">{item.ItemName}</td>
                   <td className="px-3 py-2 text-muted-foreground">
-                    {categories.find((c) => c.CategoryNum === item.ItemCategory)?.CategoryName ?? item.ItemCategory}
+                    {(() => {
+                      const cat = categories.find((c) => Number(c.CategoryNum) === Number(item.ItemCategory));
+                      return cat ? `${cat.CategoryName} (${cat.CategoryNum})` : item.ItemCategory;
+                    })()}
                   </td>
                   <td className="px-3 py-2 text-right">{item.ItemMoney.toLocaleString()}</td>
                   <td className="px-3 py-2 text-right">{item.ItemStock === 0 ? <span className="text-muted-foreground">∞</span> : item.ItemStock}</td>
                   <td className="px-3 py-2 text-center">
-                    <span className="inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium bg-muted/40 text-muted-foreground border-border">
-                      {item.ShopType}
+                    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium border-border ${item.ShopType ? "bg-green-500/10 text-green-600" : "bg-muted/40 text-muted-foreground"}`}>
+                      {item.ShopType ? "Show" : "Hide"}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-right space-x-2">
@@ -641,19 +641,18 @@ function ItemsTab() {
                   <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
                   <SelectContent>
                     {categories.map((c) => (
-                      <SelectItem key={c.idx} value={String(c.idx)}>{c.CategoryName}</SelectItem>
+                      <SelectItem key={c.idx} value={String(c.CategoryNum)}>{c.CategoryName}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Shop Type</Label>
-                <Select value={form.shopType} onValueChange={(v) => setForm((f) => ({ ...f, shopType: v }))}>
+                <Label>Visibility</Label>
+                <Select value={form.enabled} onValueChange={(v) => setForm((f) => ({ ...f, enabled: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="EP">EP</SelectItem>
-                    <SelectItem value="VP">VP</SelectItem>
-                    <SelectItem value="FREE">FREE</SelectItem>
+                    <SelectItem value="1">Show</SelectItem>
+                    <SelectItem value="0">Hide</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

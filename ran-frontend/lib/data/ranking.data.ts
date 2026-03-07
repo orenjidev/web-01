@@ -1,4 +1,10 @@
 import { apiFetch } from "@/lib/apiFetch";
+import { classMap } from "@/lib/data/character.data";
+
+// Build a flat code→groupName lookup from classMap
+const CLASS_GROUP: Record<number, string> = Object.fromEntries(
+  Object.entries(classMap).flatMap(([name, ids]) => ids.map((id) => [id])),
+);
 
 const USE_MOCK_DATA = false;
 
@@ -103,7 +109,6 @@ export async function getRankingPlayers(
   if (category && category !== "all") {
     params.set("ctg", category);
   }
-  console.log(params);
 
   const res = await apiFetch<BackendRankingResponse>(
     `/api/character/rankings?${params.toString()}`,
@@ -115,7 +120,8 @@ export async function getRankingPlayers(
   }
 
   return res.data.map((p) => ({
-    avatarSrc: `/images/class/${p.class}.jpg`,
+    //avatarSrc: `/images/class/${CLASS_GROUP[p.class] ?? p.class}.jpg`,
+    avatarSrc: `/images/class/${CLASS_GROUP[p.class] ?? p.class}.jpg`,
     classId: p.class,
     fallback: p.name.slice(0, 2).toUpperCase(),
     playerName: p.name,

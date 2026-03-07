@@ -18,6 +18,7 @@ import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
+import { usePublicConfig } from "@/context/PublicConfigContext";
 import {
   Sidebar,
   SidebarContent,
@@ -41,7 +42,9 @@ export type AdminSection =
   | "logs.user"
   | "logs.gm"
   | "tools.buildItems"
-  | "tools.buildSkills";
+  | "tools.buildSkills"
+  | "master.control"
+  | "ticket.categories";
 
 const data = {
   user: {
@@ -49,13 +52,6 @@ const data = {
     email: "admin@ranserver.com",
     avatar: "",
   },
-  teams: [
-    {
-      name: "Ran Admin Panel",
-      logo: GalleryVerticalEnd,
-      plan: "Staff Access",
-    },
-  ],
   overview: [
     {
       name: "Dashboard",
@@ -93,6 +89,7 @@ const data = {
       isActive: true,
       items: [
         { title: "Manage Tickets", action: "ticket.list" as AdminSection },
+        { title: "Ticket Categories", action: "ticket.categories" as AdminSection },
       ],
     },
     {
@@ -141,6 +138,7 @@ const data = {
       items: [
         { title: "General", action: "dashboard" as AdminSection },
         { title: "Server Config", action: "server.config" as AdminSection },
+        { title: "Master Control", action: "master.control" as AdminSection },
       ],
     },
   ],
@@ -156,10 +154,21 @@ export function AppSidebar({
   onNavigate,
   ...props
 }: AppSidebarProps) {
+  const { config } = usePublicConfig();
+  const logoImage = config?.siteImages?.logoUrl;
+  const teams = [
+    {
+      name: "Ran Admin Panel",
+      logo: GalleryVerticalEnd,
+      logoImage,
+      plan: "Staff Access",
+    },
+  ];
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
         <NavProjects

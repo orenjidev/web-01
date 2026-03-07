@@ -71,6 +71,8 @@ import { ActionLogSection } from "@/components/admin/sections/ActionLogSection";
 import { ShopAnalyticsSection } from "@/components/admin/sections/ShopAnalyticsSection";
 import { BuildItemsSection } from "@/components/admin/sections/BuildItemsSection";
 import { BuildSkillsSection } from "@/components/admin/sections/BuildSkillsSection";
+import { MasterControlSection } from "@/components/admin/sections/MasterControlSection";
+import { TicketCategorySection } from "@/components/admin/sections/TicketCategorySection";
 import { usePolling } from "@/hooks/usePolling";
 import { classMap } from "@/lib/data/character.data";
 
@@ -107,6 +109,8 @@ const SECTION_LABELS: Record<AdminSection, string> = {
   "logs.gm": "GM Action Log",
   "tools.buildItems": "Build Items",
   "tools.buildSkills": "Build Skills",
+  "master.control": "Master Control",
+  "ticket.categories": "Ticket Categories",
 };
 
 /* =====================================================
@@ -651,6 +655,8 @@ export default function DashboardPage() {
           {activeSection === "tools.buildSkills" && <BuildSkillsSection />}
           {activeSection === "logs.user" && <ActionLogSection defaultTab="user" />}
           {activeSection === "logs.gm" && <ActionLogSection defaultTab="gm" />}
+          {activeSection === "master.control" && <MasterControlSection />}
+          {activeSection === "ticket.categories" && <TicketCategorySection />}
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -18,7 +18,7 @@ import { fetchUserDetails, logoutUser, type Account } from "@/lib/auth";
 interface AuthContextValue {
   user: Account | null;
   loading: boolean;
-  refresh: () => Promise<void>;
+  refresh: (force?: boolean) => Promise<void>;
   clear: () => void;
   logout: () => Promise<void>;
 }
@@ -27,6 +27,8 @@ interface AuthContextValue {
    Context
 ===================================================== */
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const SESSION_HINT = "has_session";
 
 /* =====================================================
    Provider
@@ -40,12 +42,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /* -----------------------------------------------------
      Refresh session from backend
   ----------------------------------------------------- */
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
+    if (!force && typeof window !== "undefined" && !localStorage.getItem(SESSION_HINT)) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const account = await fetchUserDetails();
+      localStorage.setItem(SESSION_HINT, "1");
       setUser(account);
     } catch {
+      localStorage.removeItem(SESSION_HINT);
       setUser(null);
     } finally {
       setLoading(false);
@@ -56,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      Clear session locally (no API call)
   ----------------------------------------------------- */
   const clear = useCallback(() => {
+    if (typeof window !== "undefined") localStorage.removeItem(SESSION_HINT);
     setUser(null);
   }, []);
 

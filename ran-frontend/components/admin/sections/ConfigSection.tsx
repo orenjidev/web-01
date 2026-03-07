@@ -1624,14 +1624,16 @@ function LocalesEditorTab({
 ───────────────────────────── */
 
 const CLASS_IMAGE_SLOTS = [
-  { code: 1, label: "Brawler (M)" }, { code: 256, label: "Brawler (F)" },
-  { code: 2, label: "Swordsman (M)" }, { code: 512, label: "Swordsman (F)" },
-  { code: 4, label: "Archer (M)" }, { code: 1024, label: "Archer (F)" },
-  { code: 8, label: "Shaman (M)" }, { code: 2048, label: "Shaman (F)" },
-  { code: 16, label: "Extreme (M)" }, { code: 4096, label: "Extreme (F)" },
-  { code: 32, label: "Gunner (M)" }, { code: 8192, label: "Gunner (F)" },
-  { code: 64, label: "Assassin (M)" },
-  { code: 128, label: "Magician (M)" },
+  { code: 1,      label: "Brawler (M)" },   { code: 64,     label: "Brawler (F)" },
+  { code: 2,      label: "Swordsman (M)" }, { code: 128,    label: "Swordsman (F)" },
+  { code: 4,      label: "Archer (M)" },    { code: 256,    label: "Archer (F)" },
+  { code: 8,      label: "Shaman (M)" },    { code: 512,    label: "Shaman (F)" },
+  { code: 16,     label: "Extreme (M)" },   { code: 32,     label: "Extreme (F)" },
+  { code: 1024,   label: "Gunner (M)" },    { code: 2048,   label: "Gunner (F)" },
+  { code: 4096,   label: "Assassin (M)" },  { code: 8192,   label: "Assassin (F)" },
+  { code: 16384,  label: "Magician (M)" },  { code: 32768,  label: "Magician (F)" },
+  { code: 65536,  label: "Etc (M)" },       { code: 131072, label: "Etc (F)" },
+  { code: 262144, label: "Shaper (M)" },    { code: 524288, label: "Shaper (F)" },
 ];
 
 const SCHOOL_IMAGE_SLOTS = [

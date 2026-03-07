@@ -23,7 +23,8 @@ export default function AdminLoginPage() {
 
     try {
       await loginUser({ userid, password });
-      await refresh();
+      localStorage.setItem("has_session", "1");
+      await refresh(true);
 
       // After login, redirect to dashboard — the auth guard will
       // verify staff access before rendering content

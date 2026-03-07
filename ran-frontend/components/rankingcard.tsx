@@ -31,6 +31,8 @@ const RankingCard: React.FC<RankingCardProps> = ({
   school,
 }) => {
   const t = useT();
+
+  console.log(avatarSrc);
   return (
     <>
       <div className="flex items-center gap-3 px-1 py-2 hover:bg-muted/40 transition-colors">

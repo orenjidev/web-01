@@ -36,6 +36,16 @@ const SETUP_STATEMENTS = [
     CONSTRAINT PK_TicketCategories PRIMARY KEY (CategoryID)
   );`,
 
+  /* Add optional columns to TicketCategories (idempotent) */
+  `IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='TicketCategories' AND COLUMN_NAME='Description')
+    ALTER TABLE dbo.TicketCategories ADD Description NVARCHAR(255) NULL;`,
+
+  `IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='TicketCategories' AND COLUMN_NAME='DefaultAssignedTeam')
+    ALTER TABLE dbo.TicketCategories ADD DefaultAssignedTeam NVARCHAR(50) NULL;`,
+
+  `IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='TicketCategories' AND COLUMN_NAME='CreatedAt')
+    ALTER TABLE dbo.TicketCategories ADD CreatedAt DATETIME NOT NULL DEFAULT GETDATE();`,
+
   /* Seed default categories only when the table is brand-new / empty */
   `IF NOT EXISTS (SELECT 1 FROM dbo.TicketCategories)
   INSERT INTO dbo.TicketCategories (CategoryName, IsActive) VALUES

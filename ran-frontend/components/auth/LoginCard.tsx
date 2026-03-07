@@ -41,6 +41,7 @@ export default function LoginCard({
     let mounted = true;
 
     const checkSession = async () => {
+      if (!localStorage.getItem("has_session")) return;
       try {
         await fetchUserDetails();
 
@@ -51,7 +52,7 @@ export default function LoginCard({
           router.replace(checkSessionRedirectTo);
         }
       } catch {
-        // Not logged in, stay here
+        localStorage.removeItem("has_session");
       }
     };
 
@@ -75,9 +76,10 @@ export default function LoginCard({
     try {
       await loginUser({ userid, password });
 
+      localStorage.setItem("has_session", "1");
       toast.success("Login successful!");
 
-      await refresh();
+      await refresh(true);
 
       // If state-based mode, wrapper will show AccountPanel automatically
       if (!disableRouting) {

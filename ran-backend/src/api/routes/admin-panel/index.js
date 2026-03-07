@@ -7,6 +7,9 @@ import actionlogRoutes from "./actionlog.routes.js";
 import serverConfigRoutes from "./serverConfig.routes.js";
 import buildItemsRoutes from "./buildItems.routes.js";
 import buildSkillsRoutes from "./buildSkills.routes.js";
+import masterRoutes from "./master.routes.js";
+import ticketRoutes from "./tickets.routes.js";
+import ticketCategoryRoutes from "./ticket-categories.routes.js";
 
 const router = Router();
 
@@ -19,5 +22,8 @@ router.use("/actionlog", actionlogRoutes);
 router.use("/server-config", serverConfigRoutes);
 router.use("/build-items", buildItemsRoutes);
 router.use("/build-skills", buildSkillsRoutes);
+router.use("/master", masterRoutes);
+router.use("/tickets", ticketRoutes);
+router.use("/ticket-categories", ticketCategoryRoutes);
 
 export default router;
