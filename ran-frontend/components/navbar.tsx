@@ -9,13 +9,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/context/PublicConfigContext";
 import { useLanguage, useT } from "@/context/LanguageContext";
-import AccountSection from "./AccountSection";
-import LoginDialog from "@/components/auth/LoginDialog";
 
 const NavBar = () => {
   const { user, loading, logout } = useAuth();
@@ -43,11 +42,12 @@ const NavBar = () => {
                 className="inline-flex items-center transition-transform duration-200 ease-out hover:scale-105 active:scale-100"
               >
                 <Image
-                  src="/images/logo1.png"
+                  src={config?.siteImages?.logoUrl || "/images/logo1.png"}
                   width={120}
                   height={120}
                   alt="logo"
                   className="object-contain"
+                  unoptimized={!!config?.siteImages?.logoUrl}
                 />
               </Link>
             </div>
@@ -71,82 +71,110 @@ const NavBar = () => {
 
             {/* Auth Section */}
             <div className="flex items-center gap-2">
-              {/* Language switcher — dropdown for 3+, cycle for 2 */}
-              {(config?.enabledLocales?.length ?? 0) > 1 && (() => {
-                const langs = config!.enabledLocales;
-                const current = langs.find((l) => l.code === lang);
-                const currentDisplay = current?.displayName ?? lang.toUpperCase();
+              {loading ? null : !user ? (
+                <>
+                  {/* Language switcher (not logged in) — dropdown for 3+, cycle for 2 */}
+                  {(config?.enabledLocales?.length ?? 0) > 1 && (() => {
+                    const langs = config!.enabledLocales;
+                    const current = langs.find((l) => l.code === lang);
+                    const currentDisplay = current?.displayName ?? lang.toUpperCase();
 
-                // 2 locales: simple toggle
-                if (langs.length === 2) {
-                  const next = langs.find((l) => l.code !== lang) ?? langs[0];
-                  return (
+                    if (langs.length === 2) {
+                      const next = langs.find((l) => l.code !== lang) ?? langs[0];
+                      return (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setLang(next.code)}
+                          className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2"
+                          title={`Switch to ${next.displayName}`}
+                        >
+                          {next.displayName}
+                        </Button>
+                      );
+                    }
+
+                    return (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2 gap-1"
+                          >
+                            {currentDisplay}
+                            <span className="text-[10px] opacity-60">▼</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-30">
+                          {langs.map((l) => (
+                            <DropdownMenuItem
+                              key={l.code}
+                              onClick={() => setLang(l.code)}
+                              className={l.code === lang ? "font-semibold" : ""}
+                            >
+                              {l.displayName}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    );
+                  })()}
+                </>
+              ) : (
+                /* User dropdown — username triggers all options */
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setLang(next.code)}
-                      className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2"
-                      title={`Switch to ${next.displayName}`}
+                      className="text-sm text-gray-200 hover:text-white hover:bg-white/10 gap-1 px-3"
                     >
-                      {next.displayName}
+                      {user.userid}
+                      <span className="text-[10px] opacity-60">▼</span>
                     </Button>
-                  );
-                }
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-44">
+                    {/* Points info */}
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
+                      <div className="flex justify-between gap-4">
+                        <span>{config?.ePointsName ?? "ePoints"}</span>
+                        <span className="font-semibold text-foreground tabular-nums">{user.epoint}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span>{config?.vPointsName ?? "vPoints"}</span>
+                        <span className="font-semibold text-foreground tabular-nums">{user.vpoint}</span>
+                      </div>
+                    </div>
 
-                // 3+ locales: dropdown
-                return (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-gray-300 hover:text-white hover:bg-white/10 px-2 gap-1"
-                      >
-                        {currentDisplay}
-                        <span className="text-[10px] opacity-60">▼</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="min-w-30">
-                      {langs.map((l) => (
-                        <DropdownMenuItem
-                          key={l.code}
-                          onClick={() => setLang(l.code)}
-                          className={l.code === lang ? "font-semibold" : ""}
-                        >
-                          {l.displayName}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                );
-              })()}
+                    {/* Language switcher */}
+                    {(config?.enabledLocales?.length ?? 0) > 1 && (() => {
+                      const langs = config!.enabledLocales;
+                      return (
+                        <>
+                          <DropdownMenuSeparator />
+                          {langs.map((l) => (
+                            <DropdownMenuItem
+                              key={l.code}
+                              onClick={() => setLang(l.code)}
+                              className={l.code === lang ? "font-semibold" : ""}
+                            >
+                              {l.displayName}
+                            </DropdownMenuItem>
+                          ))}
+                        </>
+                      );
+                    })()}
 
-              {loading ? null : !user ? (
-                <>
-                  {/* <LoginDialog />
-                  <Link href="/register">
-                    <Button
-                      variant="ghost"
-                      className="uppercase text-gray-300 hover:text-white hover:bg-white/10"
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={logout}
+                      className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
                     >
-                      Register
-                    </Button>
-                  </Link> */}
-                </>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <Link href="/account" className="hidden lg:flex items-center h-16">
-                    <AccountSection />
-                  </Link>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={logout}
-                    className="uppercase border-white/20 hover:bg-white/10 hover:text-white"
-                  >
-                    {t.nav.logout}
-                  </Button>
-                </div>
+                      {t.nav.logout}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Facebook, MessageCircle, Youtube } from "lucide-react";
+import { Facebook, Twitter, Youtube, Twitch, Gamepad2 } from "lucide-react";
 
 import MaxWidthWrapper from "@/components/maxwidthwrapper";
 import { useModal } from "@/context/ModalContext";
@@ -36,6 +36,17 @@ export default function Footer() {
   const serverMotto = config?.serverMotto;
   const footerText = config?.footertext;
 
+  const social = config?.gameoptions?.social;
+  const socialLinks = social?.enabled
+    ? [
+        { key: "facebook", href: social.facebook, icon: Facebook, label: "Facebook" },
+        { key: "x",        href: social.x,        icon: Twitter,  label: "X / Twitter" },
+        { key: "youtube",  href: social.youtube,  icon: Youtube,  label: "YouTube" },
+        { key: "twitch",   href: social.twitch,   icon: Twitch,   label: "Twitch" },
+        { key: "steam",    href: social.steam,    icon: Gamepad2, label: "Steam" },
+      ].filter((s) => !!s.href)
+    : [];
+
   const shopEnabled = config?.shop?.enabled !== false;
   const topUpEnabled = config?.features?.topUp !== false;
   const ticketsEnabled = config?.features?.ticketSystem !== false;
@@ -55,17 +66,22 @@ export default function Footer() {
             </p>
 
             {/* Social icons */}
-            <div className="flex items-center gap-2 mt-4">
-              <a href="#" aria-label="Facebook" className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors">
-                <Facebook className="h-3.5 w-3.5" />
-              </a>
-              <a href="#" aria-label="Discord" className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors">
-                <MessageCircle className="h-3.5 w-3.5" />
-              </a>
-              <a href="#" aria-label="YouTube" className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors">
-                <Youtube className="h-3.5 w-3.5" />
-              </a>
-            </div>
+            {socialLinks.length > 0 && (
+              <div className="flex items-center gap-2 mt-4">
+                {socialLinks.map(({ key, href, icon: Icon, label }) => (
+                  <a
+                    key={key}
+                    href={href!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="h-8 w-8 rounded-lg border border-border bg-muted/20 hover:bg-muted/50 flex items-center justify-center transition-colors"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Game */}

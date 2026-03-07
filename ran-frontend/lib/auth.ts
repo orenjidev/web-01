@@ -3,7 +3,7 @@
    Single source of truth for auth-related calls
 ===================================================== */
 
-import { csrfHeaders, invalidateCsrfToken } from "@/lib/csrf";
+import { fetchWithCsrf, invalidateCsrfToken } from "@/lib/csrf";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT_URL;
 
@@ -42,12 +42,9 @@ export async function registerUser(
   try {
     assertApiBaseUrl();
 
-    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    const res = await fetchWithCsrf(`${API_BASE_URL}/api/auth/register`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(await csrfHeaders()),
-      },
+      headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
         userid: payload.username,
@@ -57,7 +54,6 @@ export async function registerUser(
         confirmPincode: payload.confirm_pincode,
         email: payload.email,
         referrer: payload.referrer ?? "",
-        //"g-recaptcha-response": payload.token,
       }),
     });
 
@@ -101,12 +97,9 @@ export interface LoginPayload {
 export async function loginUser(payload: LoginPayload): Promise<void> {
   assertApiBaseUrl();
 
-  const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const res = await fetchWithCsrf(`${API_BASE_URL}/api/auth/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(await csrfHeaders()),
-    },
+    headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({
       userid: payload.userid,
@@ -183,10 +176,9 @@ export async function logoutUser(): Promise<void> {
     throw new Error("API endpoint is not configured");
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+  const res = await fetchWithCsrf(`${API_BASE_URL}/api/auth/logout`, {
     method: "POST",
     credentials: "include",
-    headers: await csrfHeaders(),
   });
 
   if (!res.ok) {

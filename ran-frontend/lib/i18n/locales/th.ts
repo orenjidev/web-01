@@ -30,6 +30,8 @@ export const th = {
     register: "สมัครสมาชิก",
     logout: "ออกจากระบบ",
     account: "บัญชี",
+    ePoints: "ePoints",
+    vPoints: "vPoints",
   },
 
   footer: {

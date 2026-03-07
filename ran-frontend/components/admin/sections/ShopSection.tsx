@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Card,
@@ -9,10 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  getItemsPreview,
+  type ItemPreviewEntry,
+} from "@/lib/data/admin.buildItems.data";
+import {
   getShopCategories,
   createShopCategory,
   updateShopCategory,
@@ -38,6 +44,155 @@ import {
   type ShopCategory,
   type ShopItem,
 } from "@/lib/data/admin.shop.data";
+
+/* ─────────────────────────────
+   Item Picker Dialog
+───────────────────────────── */
+function ItemPickerDialog({
+  open,
+  onClose,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (item: ItemPreviewEntry) => void;
+}) {
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [items, setItems] = useState<ItemPreviewEntry[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const limit = 20;
+
+  const load = useCallback(async (p: number, s: string) => {
+    setLoading(true);
+    try {
+      const res = await getItemsPreview(p, limit, s);
+      setItems(res.items);
+      setTotal(res.total);
+      setPage(res.page);
+    } catch {
+      setItems([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setSearchInput("");
+      setSearch("");
+      load(1, "");
+    }
+  }, [open, load]);
+
+  function handleSearch() {
+    setSearch(searchInput);
+    load(1, searchInput);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[78vh] flex flex-col gap-3 overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>Pick Item from Build-Items</DialogTitle>
+        </DialogHeader>
+
+        <div className="flex gap-2 shrink-0">
+          <Input
+            placeholder="Search by ID (e.g. 10-0) or name..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="flex-1"
+          />
+          <Button variant="outline" size="sm" onClick={handleSearch}>
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-auto rounded-md border min-h-0">
+          {loading ? (
+            <div className="space-y-1 p-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-10">
+              No items found. Build items first or try a different search.
+            </p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50 sticky top-0">
+                  <th className="px-3 py-2 text-left font-medium">ID</th>
+                  <th className="px-3 py-2 text-left font-medium">Name</th>
+                  <th className="px-3 py-2 text-left font-medium">Type</th>
+                  <th className="px-3 py-2 text-right font-medium">Lvl</th>
+                  <th className="px-3 py-2 text-right font-medium">Icon</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr
+                    key={item.itemId}
+                    className="border-b last:border-0 hover:bg-primary/10 cursor-pointer transition-colors"
+                    onClick={() => onPick(item)}
+                  >
+                    <td className="px-3 py-1.5 font-mono text-xs">{item.itemId}</td>
+                    <td className="px-3 py-1.5 font-medium">{item.name || "-"}</td>
+                    <td className="px-3 py-1.5">
+                      {item.type?.label && (
+                        <Badge variant="secondary" className="text-xs font-normal">
+                          {item.type.label}
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">{item.level}</td>
+                    <td className="px-3 py-1.5 text-right font-mono text-xs">
+                      {item.icon ? `${item.icon.main}-${item.icon.sub}` : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {total > 0 && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground shrink-0">
+            <span>
+              {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total.toLocaleString()}
+              {search && " (filtered)"}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline" size="icon" className="h-7 w-7"
+                disabled={page <= 1 || loading}
+                onClick={() => load(page - 1, search)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="px-2">Page {page} of {totalPages}</span>
+              <Button
+                variant="outline" size="icon" className="h-7 w-7"
+                disabled={page >= totalPages || loading}
+                onClick={() => load(page + 1, search)}
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /* ─────────────────────────────
    Categories Tab
@@ -241,6 +396,8 @@ function ItemsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ItemPreviewEntry | null>(null);
   const [editTarget, setEditTarget] = useState<ShopItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -271,13 +428,21 @@ function ItemsTab() {
 
   function openCreate() {
     setEditTarget(null);
+    setSelectedItem(null);
     setForm({ itemMain: "", itemSub: "", itemName: "", itemCategory: "", itemStock: "0", itemMoney: "", shopType: "EP" });
     setDialogOpen(true);
   }
 
   function openEdit(item: ShopItem) {
     setEditTarget(item);
-    // Find the category by CategoryNum to get its idx (used as SelectItem value)
+    setSelectedItem({
+      itemId: `${item.ItemMain}-${item.ItemSub}`,
+      name: item.ItemName,
+      level: 0,
+      type: { id: 0, label: "" },
+      grade: { attack: 0, defense: 0 },
+      icon: { main: 0, sub: 0 },
+    });
     const matchingCat = categories.find((c) => c.CategoryNum === item.ItemCategory);
     setForm({
       itemMain: String(item.ItemMain),
@@ -289,6 +454,18 @@ function ItemsTab() {
       shopType: item.ShopType,
     });
     setDialogOpen(true);
+  }
+
+  function handleItemPicked(item: ItemPreviewEntry) {
+    const [mid, sid] = item.itemId.split("-");
+    setSelectedItem(item);
+    setForm((f) => ({
+      ...f,
+      itemMain: mid ?? "",
+      itemSub: sid ?? "0",
+      itemName: item.name,
+    }));
+    setPickerOpen(false);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -312,8 +489,8 @@ function ItemsTab() {
         });
         toast.success("Item updated.");
       } else {
-        if (!form.itemMain || !form.itemName || !form.itemMoney) {
-          toast.error("Please fill all required fields.");
+        if (!selectedItem || !form.itemMain || !form.itemName || !form.itemMoney) {
+          toast.error("Please pick an item and fill all required fields.");
           setSaving(false);
           return;
         }
@@ -400,6 +577,12 @@ function ItemsTab() {
         </div>
       )}
 
+      <ItemPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={handleItemPicked}
+      />
+
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(o) => !o && setDialogOpen(false)}>
         <DialogContent className="max-w-md">
@@ -407,19 +590,49 @@ function ItemsTab() {
             <DialogTitle>{editTarget ? "Edit Shop Item" : "Add Shop Item"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-3 pt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Item Main ID <span className="text-destructive">*</span></Label>
-                <Input type="number" value={form.itemMain} onChange={set("itemMain")} />
-              </div>
-              <div className="space-y-1">
-                <Label>Item Sub ID</Label>
-                <Input type="number" value={form.itemSub} onChange={set("itemSub")} />
-              </div>
+            {/* Item Picker */}
+            <div className="space-y-1">
+              <Label>Item <span className="text-destructive">*</span></Label>
+              {selectedItem ? (
+                <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{selectedItem.name || "Unknown"}</div>
+                      <div className="font-mono text-xs text-muted-foreground">ID: {selectedItem.itemId}</div>
+                      {selectedItem.type?.label && (
+                        <Badge variant="secondary" className="mt-1 text-xs">{selectedItem.type.label}</Badge>
+                      )}
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground shrink-0 space-y-0.5">
+                      {selectedItem.level > 0 && <div>Lvl {selectedItem.level}</div>}
+                      {(selectedItem.grade?.attack || selectedItem.grade?.defense) ? (
+                        <div>ATK {selectedItem.grade.attack} / DEF {selectedItem.grade.defense}</div>
+                      ) : null}
+                      {selectedItem.icon && (selectedItem.icon.main > 0 || selectedItem.icon.sub > 0) && (
+                        <div className="font-mono">Icon {selectedItem.icon.main}-{selectedItem.icon.sub}</div>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    type="button" variant="outline" size="sm" className="w-full"
+                    onClick={() => setPickerOpen(true)}
+                  >
+                    Change Item
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button" variant="outline" className="w-full justify-start text-muted-foreground h-9"
+                  onClick={() => setPickerOpen(true)}
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Click to pick an item from build-items...
+                </Button>
+              )}
             </div>
             <div className="space-y-1">
               <Label>Item Name <span className="text-destructive">*</span></Label>
-              <Input value={form.itemName} onChange={set("itemName")} />
+              <Input value={form.itemName} onChange={set("itemName")} placeholder="Display name in shop" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">

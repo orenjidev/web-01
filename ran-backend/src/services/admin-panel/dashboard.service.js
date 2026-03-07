@@ -1,5 +1,7 @@
 import { getWebPool } from "../../loaders/mssql.js";
 
+const gameDb = process.env.DB_NAME_GAME || "RG2Game";
+
 /**
  * =====================================================
  * Admin Panel - Dashboard Service
@@ -154,7 +156,7 @@ export async function getCharactersPerSchool() {
       ChaSchool AS School,
       COUNT(*) AS TotalCount,
       SUM(CASE WHEN ChaOnline = 1 THEN 1 ELSE 0 END) AS ActiveCount
-    FROM [RG2Game].dbo.ChaInfo
+    FROM [${gameDb}].dbo.ChaInfo
     GROUP BY ChaSchool
     ORDER BY ChaSchool ASC
   `);
@@ -178,7 +180,7 @@ export async function getCharactersPerClass() {
       ChaClass AS Class,
       COUNT(*) AS TotalCount,
       SUM(CASE WHEN ChaOnline = 1 THEN 1 ELSE 0 END) AS ActiveCount
-    FROM [RG2Game].dbo.ChaInfo
+    FROM [${gameDb}].dbo.ChaInfo
     GROUP BY ChaClass
     ORDER BY ChaClass ASC
   `);

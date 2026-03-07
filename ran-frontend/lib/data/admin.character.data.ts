@@ -106,11 +106,11 @@ export interface CharacterEditPayload {
   spi?: number;
   sta?: number;
   intel?: number;
+  class?: number;
   school?: number;
   hair?: number;
   face?: number;
   hairColor?: number;
-  sex?: number;
   living?: number;
   isOnline?: number;
   isDeleted?: number;

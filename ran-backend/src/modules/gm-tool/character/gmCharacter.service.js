@@ -201,6 +201,7 @@ const EDITABLE_FIELDS = {
   spi: { col: "ChaSpirit", type: () => sql.SmallInt, min: 0, max: 9999 },
   sta: { col: "ChaStrength", type: () => sql.SmallInt, min: 0, max: 9999 },
   intel: { col: "ChaIntel", type: () => sql.SmallInt, min: 0, max: 9999 },
+  class: { col: "ChaClass", type: () => sql.Int, min: 0, max: 524288 },
   school: { col: "ChaSchool", type: () => sql.SmallInt, min: 0, max: 9 },
   hair: { col: "ChaHair", type: () => sql.SmallInt, min: 0 },
   face: { col: "ChaFace", type: () => sql.SmallInt, min: 0 },

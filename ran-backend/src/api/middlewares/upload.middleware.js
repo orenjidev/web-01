@@ -37,15 +37,23 @@ export async function validateMimeType(file, allowedMimes) {
   }
 }
 
+const imageFilter = (_req, file, cb) => {
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!allowed.includes(file.mimetype)) {
+    cb(new Error("Only image files are allowed (jpeg, png, webp, gif)"));
+  } else {
+    cb(null, true);
+  }
+};
+
 export const sliderUpload = multer({
   storage: makeStorage(path.join(process.cwd(), "uploads/slider")),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (_req, file, cb) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowed.includes(file.mimetype)) {
-      cb(new Error("Only image files are allowed (jpeg, png, webp, gif)"));
-    } else {
-      cb(null, true);
-    }
-  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: imageFilter,
+});
+
+export const staticImageUpload = multer({
+  storage: makeStorage(path.join(process.cwd(), "uploads/images")),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: imageFilter,
 });

@@ -29,6 +29,7 @@ export interface BackendRankingResponse {
 
 export interface RankingPlayer {
   avatarSrc: string;
+  classId: number;
   fallback: string;
   playerName: string;
   level: string;
@@ -47,6 +48,7 @@ export interface RankingPlayer {
 export const DUMMY_RANKING_PLAYERS: RankingPlayer[] = [
   {
     avatarSrc: "/images/class/1.jpg",
+    classId: 1,
     fallback: "AX",
     playerName: "Axel",
     level: "125",
@@ -114,6 +116,7 @@ export async function getRankingPlayers(
 
   return res.data.map((p) => ({
     avatarSrc: `/images/class/${p.class}.jpg`,
+    classId: p.class,
     fallback: p.name.slice(0, 2).toUpperCase(),
     playerName: p.name,
     level: String(p.lvl),

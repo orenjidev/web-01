@@ -30,6 +30,8 @@ export const en = {
     register: "Register",
     logout: "Logout",
     account: "Account",
+    ePoints: "ePoints",
+    vPoints: "vPoints",
   },
 
   footer: {

@@ -3,25 +3,6 @@
 export const baseServerConfig = {
   /**
    * =====================================================
-   * Database Configuration
-   * =====================================================
-   */
-  database: {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-
-    databases: {
-      cp: process.env.DB_NAME_WEB || "OrenjiWeb",
-      game: process.env.DB_NAME_GAME || "RG2Game",
-      game: process.env.DB_NAME_SHOP || "RG2Shop",
-      game: process.env.DB_NAME_LOG || "RG2Log",
-      game: process.env.DB_NAME_USER || "RG2User",
-    },
-  },
-
-  /**
-   * =====================================================
    * Server Definitions (Public Metadata)
    * =====================================================
    */
@@ -237,5 +218,17 @@ export const baseServerConfig = {
     youtube: "",
     twitch: "",
     steam: "",
+  },
+
+  /**
+   * =====================================================
+   * Site Images (overrides for static assets)
+   * Empty string = use default static file from public/images/
+   * =====================================================
+   */
+  siteImages: {
+    logoUrl: "",
+    classImages: {},
+    schoolImages: {},
   },
 };

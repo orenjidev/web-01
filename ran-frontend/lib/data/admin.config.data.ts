@@ -26,3 +26,13 @@ export async function uploadSliderImage(file: File): Promise<string> {
   );
   return json.url;
 }
+
+export async function uploadStaticImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const json = await apiFetch<{ url: string }>(
+    "/api/adminpanel/server-config/upload-static",
+    { method: "POST", body: formData },
+  );
+  return json.url;
+}

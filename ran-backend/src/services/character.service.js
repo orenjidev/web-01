@@ -4,6 +4,8 @@ import { getOfflineCharacterForUpdate } from "./guard/character.guard.js";
 import { applyCharacterCost } from "./util/character.util.js";
 import { CACHE_DURATION_MS } from "./util.service.js";
 import { baseServerConfig } from "../config/server.config.js";
+
+const gameDb = process.env.DB_NAME_GAME || "RG2Game";
 import { getRebornStage } from "./util/getReborn.util.js";
 import {
   classMap,
@@ -37,10 +39,6 @@ export const getCharacterRanking = async (limit = 100, classFilter = "") => {
   let classCondition = "";
   let orderBy = "C.ChaLevel DESC, A.PVPKills DESC";
 
-  const enabledClassIds = Object.entries(classMap)
-    .filter(([name]) => baseServerConfig.classes[name])
-    .flatMap(([, ids]) => ids);
-
   if (classMap[filter]) {
     if (!baseServerConfig.classes[filter]) return [];
     classCondition = `AND C.ChaClass IN (${classMap[filter].join(",")})`;
@@ -61,26 +59,31 @@ export const getCharacterRanking = async (limit = 100, classFilter = "") => {
       case "exp":
         orderBy = "C.ChaLevel DESC, C.ChaEXP DESC";
         break;
-      default:
+      default: {
+        const enabledClassIds = Object.entries(classMap)
+          .filter(([name]) => baseServerConfig.classes?.[name])
+          .flatMap(([, ids]) => ids);
         if (!enabledClassIds.length) return [];
         classCondition = `AND C.ChaClass IN (${enabledClassIds.join(",")})`;
+        break;
+      }
     }
   }
 
   const pool = await getGamePool();
   const result = await pool.request().query(`
     SELECT TOP (${top})
-      A.ChaNum AS num,
-      A.PVPKills AS kills,
-      A.PVPDeaths AS deaths,
+      C.ChaNum AS num,
+      COALESCE(A.PVPKills, 0) AS kills,
+      COALESCE(A.PVPDeaths, 0) AS deaths,
       C.ChaName AS name,
       C.ChaLevel AS lvl,
       C.ChaClass AS class,
       C.ChaMoney AS money,
       C.ChaSchool AS school,
       C.ChaOnline AS isOnline
-    FROM RG2Game.dbo.ChaBattleStat A
-    JOIN RG2Game.dbo.ChaInfo C ON A.ChaNum = C.ChaNum
+    FROM ${gameDb}.dbo.ChaInfo C
+    LEFT JOIN ${gameDb}.dbo.ChaBattleStat A ON A.ChaNum = C.ChaNum
     WHERE C.ChaDeleted = 0
     ${classCondition}
     ORDER BY ${orderBy}
@@ -104,7 +107,7 @@ export const getCharactersByUserId = async (userNum) => {
 
   const fp = await req.query(`
     SELECT COUNT(*) AS charCount, MAX(ChaNum) AS maxCharNum
-    FROM RG2Game.dbo.ChaInfo
+    FROM ${gameDb}.dbo.ChaInfo
     WHERE UserNum = @UserNum AND ChaDeleted = 0
   `);
 
@@ -129,7 +132,7 @@ export const getCharactersByUserId = async (userNum) => {
       ChaLevel AS level,
       ChaReborn AS reborn,
       ChaOnline AS isOnline
-    FROM RG2Game.dbo.ChaInfo
+    FROM ${gameDb}.dbo.ChaInfo
     WHERE UserNum = @UserNum AND ChaDeleted = 0
     ORDER BY ChaNum
   `);
@@ -180,7 +183,7 @@ export const changeCharacterSchool = async (characterId, school, ctx) => {
   const pool = await getGamePool();
   await pool.request().input("ChaNum", characterId).input("ChaSchool", schoolId)
     .query(`
-      UPDATE RG2Game.dbo.ChaInfo
+      UPDATE ${gameDb}.dbo.ChaInfo
       SET ChaSchool = @ChaSchool
       WHERE ChaNum = @ChaNum
     `);
@@ -222,7 +225,7 @@ export const resetCharacterStat = async (characterId, ctx) => {
 
   const pool = await getGamePool();
   await pool.request().input("ChaNum", characterId).query(`
-    UPDATE RG2Game.dbo.ChaInfo
+    UPDATE ${gameDb}.dbo.ChaInfo
     SET
       ChaStRemain = ChaStRemain + ChaPower + ChaDex + ChaSpirit + ChaStrong + ChaStrength + ChaIntel,
       ChaPower = 0,
@@ -277,7 +280,7 @@ export const changeCharacterClass = async (characterId, targetClass, ctx) => {
   const pool = await getGamePool();
   await pool.request().input("ChaNum", characterId).input("ChaClass", newClass)
     .query(`
-      UPDATE RG2Game.dbo.ChaInfo
+      UPDATE ${gameDb}.dbo.ChaInfo
       SET ChaClass = @ChaClass, ChaSkillSlot = NULL
       WHERE ChaNum = @ChaNum
     `);
@@ -364,7 +367,7 @@ export const rebornCharacter = async (characterId, ctx) => {
     .input("ChaNum", characterId)
     .input("NewReborn", newReborn)
     .input("TotalRebornStat", totalRebornStat).query(`
-    UPDATE RG2Game.dbo.ChaInfo
+    UPDATE ${gameDb}.dbo.ChaInfo
     SET
       ChaLevel = 1,
       ChaEXP = 0,
@@ -461,7 +464,7 @@ export const deleteCharacter = async (characterId, ctx) => {
 
   const pool = await getGamePool();
   await pool.request().input("ChaNum", characterId).query(`
-    UPDATE RG2Game.dbo.ChaInfo
+    UPDATE ${gameDb}.dbo.ChaInfo
     SET ChaDeleted = 1, ChaDeletedDate = GETDATE()
     WHERE ChaNum = @ChaNum
   `);

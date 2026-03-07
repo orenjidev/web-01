@@ -1,4 +1,5 @@
 import { getGamePool, getUserPool } from "../../loaders/mssql.js";
+const gameDb = process.env.DB_NAME_GAME || "RG2Game";
 
 export const getOfflineCharacterForUpdate = async (characterId, userNum) => {
   if (!characterId || !userNum) {
@@ -28,7 +29,7 @@ export const getOfflineCharacterForUpdate = async (characterId, userNum) => {
       ChaLevel,
       ChaReborn,
       ChaClass
-    FROM RG2Game.dbo.ChaInfo
+    FROM ${gameDb}.dbo.ChaInfo
     WHERE ChaNum = @ChaNum
       AND UserNum = @UserNum
       AND ChaDeleted = 0

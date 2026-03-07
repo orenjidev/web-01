@@ -35,9 +35,9 @@ const RankingSection = () => {
       setError("");
 
       try {
-        const data = await getRankingPlayers(rankingLimit); // default category = all
+        const data = await getRankingPlayers(500); // fetch max, slice on UI
         if (!isCancelled) {
-          setPlayers(data);
+          setPlayers(data.slice(0, rankingLimit));
         }
       } catch (err: unknown) {
         if (!isCancelled) {
@@ -55,7 +55,7 @@ const RankingSection = () => {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [rankingLimit]);
 
   return (
     <Card>
@@ -71,20 +71,24 @@ const RankingSection = () => {
 
         {!loading &&
           !error &&
-          players.map((p, i) => (
-            <RankingCard
-              key={`${p.playerName}-${i}`}
-              avatarSrc={p.avatarSrc}
-              fallback={p.fallback}
-              playerName={p.playerName}
-              level={p.level}
-              kills={p.kills}
-              deaths={p.deaths}
-              money={p.money}
-              rank={i + 1}
-              school={p.school}
-            />
-          ))}
+          players.map((p, i) => {
+            const classImages = publicConfig?.siteImages?.classImages ?? {};
+            const avatarSrc = classImages[String(p.classId)] || p.avatarSrc;
+            return (
+              <RankingCard
+                key={`${p.playerName}-${i}`}
+                avatarSrc={avatarSrc}
+                fallback={p.fallback}
+                playerName={p.playerName}
+                level={p.level}
+                kills={p.kills}
+                deaths={p.deaths}
+                money={p.money}
+                rank={i + 1}
+                school={p.school}
+              />
+            );
+          })}
       </CardContent>
 
       <CardFooter>

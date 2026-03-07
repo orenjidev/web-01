@@ -20,6 +20,7 @@ const DB_SECTIONS = [
   "sliderConfig",
   "systemRequirements",
   "locales",
+  "siteImages",
 ];
 
 const CREATE_TABLE_SQL = `

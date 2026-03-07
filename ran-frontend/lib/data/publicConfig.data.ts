@@ -101,6 +101,12 @@ export interface PublicConfig {
       steam: string;
     };
   };
+
+  siteImages: {
+    logoUrl: string;
+    classImages: Record<string, string>;
+    schoolImages: Record<string, string>;
+  };
 }
 
 export async function fetchPublicConfig(): Promise<PublicConfig> {

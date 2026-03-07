@@ -70,6 +70,12 @@ export function getPublicConfig(req, res) {
       };
     })(),
 
+    siteImages: {
+      logoUrl: baseServerConfig.siteImages?.logoUrl ?? "",
+      classImages: baseServerConfig.siteImages?.classImages ?? {},
+      schoolImages: baseServerConfig.siteImages?.schoolImages ?? {},
+    },
+
     gameoptions: {
       changeSchool: {
         enabled: baseServerConfig.changeSchool.enabled,

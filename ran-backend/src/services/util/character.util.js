@@ -1,6 +1,8 @@
 import sql from "mssql";
 import { getGamePool, getUserPool } from "../../loaders/mssql.js";
 import { baseServerConfig } from "../../config/server.config.js";
+
+const gameDb = process.env.DB_NAME_GAME || "RG2Game";
 import { logAction } from "../actionlog.service.js";
 
 export const applyCharacterCost = async ({
@@ -49,7 +51,7 @@ export const applyCharacterCost = async ({
 
       const result = await req.query(`
         SELECT ChaMoney
-        FROM RG2Game.dbo.ChaInfo WITH (UPDLOCK, ROWLOCK)
+        FROM ${gameDb}.dbo.ChaInfo WITH (UPDLOCK, ROWLOCK)
         WHERE ChaNum = @ChaNum
       `);
 
@@ -66,14 +68,14 @@ export const applyCharacterCost = async ({
       req.input("Fee", sql.BigInt, fee);
 
       await req.query(`
-        UPDATE RG2Game.dbo.ChaInfo
+        UPDATE ${gameDb}.dbo.ChaInfo
         SET ChaMoney = ChaMoney - @Fee
         WHERE ChaNum = @ChaNum
       `);
 
       const after = await req.query(`
         SELECT ChaMoney
-        FROM RG2Game.dbo.ChaInfo
+        FROM ${gameDb}.dbo.ChaInfo
         WHERE ChaNum = @ChaNum
       `);
 

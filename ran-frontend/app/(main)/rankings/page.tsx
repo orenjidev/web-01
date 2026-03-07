@@ -57,7 +57,7 @@ const RankingPage = () => {
     ];
   });
 
-  const rankingLimit = publicConfig?.gameoptions?.uihelper?.max_toprank ?? 10;
+  const rankingLimit = publicConfig?.gameoptions?.uihelper?.max_rankall ?? 50;
 
   useEffect(() => {
     let cancelled = false;
@@ -67,9 +67,9 @@ const RankingPage = () => {
       setError("");
 
       try {
-        const data = await getRankingPlayers(rankingLimit, selectedCategory);
+        const data = await getRankingPlayers(500, selectedCategory); // fetch max, slice on UI
         if (!cancelled) {
-          setPlayers(data);
+          setPlayers(data.slice(0, rankingLimit));
         }
       } catch (err: unknown) {
         if (!cancelled) {
@@ -87,7 +87,7 @@ const RankingPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [selectedCategory]);
+  }, [selectedCategory, rankingLimit]);
 
   return (
     <div className="container mx-auto gap-4">
@@ -145,18 +145,21 @@ const RankingPage = () => {
 
                     <TableCell className="text-center">
                       <Avatar className="w-6 h-6 mx-auto">
-                        <AvatarImage src={p.avatarSrc} />
+                        <AvatarImage
+                          src={publicConfig?.siteImages?.classImages?.[String(p.classId)] || p.avatarSrc}
+                        />
                         <AvatarFallback>{p.fallback}</AvatarFallback>
                       </Avatar>
                     </TableCell>
 
                     <TableCell className="text-center">
                       <Image
-                        src={getSchoolImage(p.school)}
+                        src={publicConfig?.siteImages?.schoolImages?.[String(p.school)] || getSchoolImage(p.school)}
                         alt={getSchoolName(p.school)}
                         width={16}
                         height={16}
                         className="mx-auto"
+                        unoptimized
                       />
                     </TableCell>
 

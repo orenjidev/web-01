@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   getServerConfig,
   saveConfigSection,
   uploadSliderImage,
+  uploadStaticImage,
 } from "@/lib/data/admin.config.data";
 import { usePublicConfig } from "@/context/PublicConfigContext";
 import { en as enDefault } from "@/lib/i18n/locales/en";
@@ -560,6 +561,7 @@ const CLASS_LIST = [
   "gunner",
   "assassin",
   "magician",
+  "shaper",
 ];
 
 function ClassesTab({
@@ -1618,6 +1620,201 @@ function LocalesEditorTab({
 }
 
 /* ─────────────────────────────
+   Site Images Tab
+───────────────────────────── */
+
+const CLASS_IMAGE_SLOTS = [
+  { code: 1, label: "Brawler (M)" }, { code: 256, label: "Brawler (F)" },
+  { code: 2, label: "Swordsman (M)" }, { code: 512, label: "Swordsman (F)" },
+  { code: 4, label: "Archer (M)" }, { code: 1024, label: "Archer (F)" },
+  { code: 8, label: "Shaman (M)" }, { code: 2048, label: "Shaman (F)" },
+  { code: 16, label: "Extreme (M)" }, { code: 4096, label: "Extreme (F)" },
+  { code: 32, label: "Gunner (M)" }, { code: 8192, label: "Gunner (F)" },
+  { code: 64, label: "Assassin (M)" },
+  { code: 128, label: "Magician (M)" },
+];
+
+const SCHOOL_IMAGE_SLOTS = [
+  { code: 0, label: "Sacred Gate" },
+  { code: 1, label: "Mystic Peak" },
+  { code: 2, label: "Phoenix" },
+];
+
+function ImageUploadSlot({
+  label,
+  currentUrl,
+  defaultSrc,
+  onUploaded,
+}: {
+  label: string;
+  currentUrl: string;
+  defaultSrc: string;
+  onUploaded: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadStaticImage(file);
+      onUploaded(url);
+      toast.success(`${label} uploaded.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  const displaySrc = currentUrl || defaultSrc;
+
+  return (
+    <div className="flex flex-col items-center gap-2 p-3 border rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
+      <div className="w-14 h-14 rounded overflow-hidden border bg-background flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={displaySrc} alt={label} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+      </div>
+      <span className="text-xs font-medium text-center leading-tight">{label}</span>
+      {currentUrl && (
+        <span className="text-[10px] text-emerald-500 font-medium">Custom</span>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <Button
+        type="button" variant="outline" size="sm" className="w-full text-xs h-7"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+      >
+        <Upload className="h-3 w-3 mr-1" />
+        {uploading ? "Uploading…" : "Upload"}
+      </Button>
+      {currentUrl && (
+        <Button
+          type="button" variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground"
+          onClick={() => onUploaded("")}
+        >
+          Reset to default
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function SiteImagesTab({
+  data,
+  onSave,
+}: {
+  data: Record<string, any>;
+  onSave: (v: Record<string, any>) => Promise<void>;
+}) {
+  const [form, setForm] = useState<Record<string, any>>(data);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setForm(data); }, [data]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave(form);
+      toast.success("Site images saved.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function setClassImage(code: number, url: string) {
+    setForm((f) => ({
+      ...f,
+      classImages: { ...(f.classImages ?? {}), [String(code)]: url },
+    }));
+  }
+
+  function setSchoolImage(code: number, url: string) {
+    setForm((f) => ({
+      ...f,
+      schoolImages: { ...(f.schoolImages ?? {}), [String(code)]: url },
+    }));
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Logo */}
+      <Card>
+        <CardHeader><CardTitle className="text-sm">Site Logo</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            <ImageUploadSlot
+              label="Logo"
+              currentUrl={form.logoUrl ?? ""}
+              defaultSrc="/images/logo1.png"
+              onUploaded={(url) => setForm((f) => ({ ...f, logoUrl: url }))}
+            />
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>Replaces the logo shown in the navigation bar.</p>
+              <p>Recommended: PNG with transparent background, ~120×120px.</p>
+              {form.logoUrl && (
+                <p className="font-mono text-[10px] break-all">{form.logoUrl}</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Class Ranking Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Class Ranking Images</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+            {CLASS_IMAGE_SLOTS.map((slot) => (
+              <ImageUploadSlot
+                key={slot.code}
+                label={slot.label}
+                currentUrl={form.classImages?.[String(slot.code)] ?? ""}
+                defaultSrc={`/images/class/${slot.code}.jpg`}
+                onUploaded={(url) => setClassImage(slot.code, url)}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* School Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">School Images</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3 max-w-xs">
+            {SCHOOL_IMAGE_SLOTS.map((slot) => (
+              <ImageUploadSlot
+                key={slot.code}
+                label={slot.label}
+                currentUrl={form.schoolImages?.[String(slot.code)] ?? ""}
+                defaultSrc={`/images/school/${slot.code}.png`}
+                onUploaded={(url) => setSchoolImage(slot.code, url)}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving…" : "Save Images"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────
    Main ConfigSection component
 ───────────────────────────── */
 
@@ -1672,6 +1869,7 @@ export function ConfigSection() {
           <TabsTrigger value="character">Character</TabsTrigger>
           <TabsTrigger value="economy">Economy</TabsTrigger>
           <TabsTrigger value="display">Display</TabsTrigger>
+          <TabsTrigger value="images">Images</TabsTrigger>
           <TabsTrigger value="locales">Locales</TabsTrigger>
         </TabsList>
 
@@ -1869,6 +2067,13 @@ export function ConfigSection() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="images" className="mt-0">
+          <SiteImagesTab
+            data={config.siteImages ?? {}}
+            onSave={makeSaver("siteImages")}
+          />
         </TabsContent>
       </Tabs>
     </div>

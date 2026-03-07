@@ -17,3 +17,20 @@ export function invalidateCsrfToken() {
 export async function csrfHeaders(): Promise<Record<string, string>> {
   return { "x-csrf-token": await getCsrfToken() };
 }
+
+export async function fetchWithCsrf(
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
+  const headers = { ...(init.headers as Record<string, string>), ...(await csrfHeaders()) };
+  const res = await fetch(url, { ...init, headers });
+
+  if (res.status === 403) {
+    // CSRF token may be stale (e.g. backend restarted) — retry once with a fresh token
+    invalidateCsrfToken();
+    const retryHeaders = { ...(init.headers as Record<string, string>), ...(await csrfHeaders()) };
+    return fetch(url, { ...init, headers: retryHeaders });
+  }
+
+  return res;
+}

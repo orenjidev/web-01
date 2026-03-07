@@ -72,6 +72,7 @@ import { ShopAnalyticsSection } from "@/components/admin/sections/ShopAnalyticsS
 import { BuildItemsSection } from "@/components/admin/sections/BuildItemsSection";
 import { BuildSkillsSection } from "@/components/admin/sections/BuildSkillsSection";
 import { usePolling } from "@/hooks/usePolling";
+import { classMap } from "@/lib/data/character.data";
 
 /* =====================================================
    Constants
@@ -83,13 +84,12 @@ const SCHOOL_NAMES: Record<number, string> = {
   2: "Phoenix",
 };
 
-const CLASS_NAMES: Record<number, string> = {
-  0: "Brawler M", 1: "Swordsman M", 2: "Archer F", 3: "Shaman F",
-  4: "Extreme M", 5: "Extreme F", 6: "Brawler F", 7: "Swordsman F",
-  8: "Archer M", 9: "Shaman M", 10: "Gunner M", 11: "Gunner F",
-  12: "Assassin M", 13: "Assassin F", 14: "Magician M", 15: "Magician F",
-  16: "Etc M", 17: "Etc F", 18: "Shaper M", 19: "Shaper F",
-};
+const CLASS_NAMES: Record<number, string> = Object.fromEntries(
+  Object.entries(classMap).flatMap(([name, [male, female]]) => [
+    [male, `${name.charAt(0).toUpperCase() + name.slice(1)} M`],
+    [female, `${name.charAt(0).toUpperCase() + name.slice(1)} F`],
+  ])
+);
 
 const SECTION_LABELS: Record<AdminSection, string> = {
   dashboard: "Dashboard",
